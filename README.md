@@ -9,3 +9,7 @@ For now, programs written in this language are hardcoded in [main.rs](./src/main
 ```console
 $ cargo run
 ```
+
+## Documentation
+
+To read the documentation, see [docs.md](./docs/docs.md).
