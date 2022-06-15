@@ -3,6 +3,8 @@ use super::ir::*;
 use super::parser::*;
 use super::lexer::*;
 
+use std::fmt;
+
 #[derive(Debug)]
 pub enum LoispError {
     NotEnoughParameters(LexerToken),
@@ -11,6 +13,20 @@ pub enum LoispError {
     MismatchedTypes(LexerToken),
     ParserError(ParserError),
     Unknown
+}
+
+impl fmt::Display for LoispError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        match self {
+            Self::NotEnoughParameters(token) => write!(f, "{}: ERROR: Not enough parameters for `{}`", token.location, token.value.string)?,
+            Self::TooMuchParameters(token) => write!(f, "{}: ERROR: Too much parameters for `{}`", token.location, token.value.string)?,
+            Self::CantAcceptNothing(token) => write!(f, "{}: ERROR: The function `{}` can't accept value of type `Nothing`", token.location, token.value.string)?,
+            Self::MismatchedTypes(token) => write!(f, "{}: ERROR: Mismatched types on parameter for function `{}`", token.location, token.value.string)?,
+            Self::ParserError(error) => write!(f, "{}", error)?,
+            Self::Unknown => write!(f, "ERROR: Unknown error")?
+        }
+        todo!()
+    }
 }
 
 impl From<std::io::Error> for LoispError {
