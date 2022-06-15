@@ -6,10 +6,10 @@ use std::iter::Peekable;
 
 #[derive(Debug)]
 pub enum ParserError {
-    InvalidSyntax,
-    UnmatchedParenthesis,
+    InvalidSyntax(LexerToken),
+    UnmatchedParenthesis(LexerToken),
     ReachedEOF,
-    ExpectedNameToBeWord,
+    ExpectedNameToBeWord(LexerToken),
     UnknownInstruction
 }
 
@@ -22,16 +22,22 @@ pub fn string_to_instruction_kind(string: String) -> Result<LoispInstructionType
 }
 
 pub fn parse_instruction(lexer: &mut lexer_type!()) -> Result<LoispInstruction, ParserError> {
-    let mut instruction = LoispInstruction::new();
+    let mut instruction = LoispInstruction::new(LexerToken {kind: LexerTokenKind::Word, value: LexerTokenValue {string: String::new(), integer: 0}, location: LexerLocation::new(String::new())});
+    if let Some(t) = lexer.peek() {
+        instruction.token = (*t).clone();
+    } else {
+        return Err(ParserError::ReachedEOF)
+    }
 
     if let Some(name) = lexer.next() {
         if name.kind != LexerTokenKind::Word {
-            return Err(ParserError::ExpectedNameToBeWord)
+            return Err(ParserError::ExpectedNameToBeWord(name.clone()))
         }
 
-        instruction.kind = string_to_instruction_kind(name.value.string)?;
+        instruction.kind = string_to_instruction_kind(name.clone().value.string)?;
 
         let mut closed = false;
+        let location = name.clone();
 
         while let Some(next) = lexer.next() {
             use LexerTokenKind::*;
@@ -42,15 +48,15 @@ pub fn parse_instruction(lexer: &mut lexer_type!()) -> Result<LoispInstruction, 
                     break;
                 }
                 OpenParen => {
-                    let mut value = LoispValue::new();
+                    let mut value = LoispValue::new(next.clone());
                     value.instruction_return = parse_instruction(lexer)?;
                     instruction.parameters.push(value);
                 }
                 Word => {
-                    return Err(ParserError::InvalidSyntax)
+                    return Err(ParserError::InvalidSyntax(next.clone()))
                 }
                 Integer => {
-                    let mut value = LoispValue::new();
+                    let mut value = LoispValue::new(next.clone());
                     value.integer = Some(next.value.integer);
                     instruction.parameters.push(value);
                 }
@@ -58,7 +64,7 @@ pub fn parse_instruction(lexer: &mut lexer_type!()) -> Result<LoispInstruction, 
         }
 
         if !closed {
-            return Err(ParserError::UnmatchedParenthesis)
+            return Err(ParserError::UnmatchedParenthesis(location.clone()))
         }
     } else {
         return Err(ParserError::ReachedEOF)
@@ -77,9 +83,9 @@ pub fn construct_instructions_from_tokens(lexer: &mut lexer_type!()) -> Result<V
             OpenParen => {
                 instructions.push(parse_instruction(lexer)?);
             }
-            CloseParen => return Err(ParserError::UnmatchedParenthesis),
-            Word => return Err(ParserError::InvalidSyntax),
-            Integer => return Err(ParserError::InvalidSyntax)
+            CloseParen => return Err(ParserError::UnmatchedParenthesis(x.clone())),
+            Word => return Err(ParserError::InvalidSyntax(x.clone())),
+            Integer => return Err(ParserError::InvalidSyntax(x.clone()))
         }
     }
     Ok(instructions)
