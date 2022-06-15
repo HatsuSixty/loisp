@@ -4,10 +4,14 @@ Low Level Lisp (Loisp) is an S-expression based programming language implemented
 
 ## Quick Start
 
-For now, programs written in this language are hardcoded in [main.rs](./src/main.rs). Running the compiler like this, should convert the source code into assembly.
+For now, programs written in this language are read from a file in the same working directory of the compiler called `test.loisp`:
 
 ```console
+$ echo "(print (+ 34 35))" > test.loisp
 $ cargo run
+$ nasm -felf64 output.asm
+$ ld -o output output.o
+$ ./output
 ```
 
 ## Documentation

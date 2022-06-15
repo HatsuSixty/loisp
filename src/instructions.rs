@@ -25,7 +25,7 @@ impl fmt::Display for LoispError {
             Self::ParserError(error) => write!(f, "{}", error)?,
             Self::Unknown => write!(f, "ERROR: Unknown error")?
         }
-        todo!()
+        Ok(())
     }
 }
 

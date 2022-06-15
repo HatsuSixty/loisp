@@ -19,7 +19,7 @@ impl fmt::Display for ParserError {
         match self {
             Self::InvalidSyntax(token) => write!(f, "{}: ERROR: Invalid syntax", token.location)?,
             Self::UnmatchedParenthesis(token) => write!(f, "{}: ERROR: Unmatched parenthesis", token.location)?,
-            Self::ExpectedNameToBeWord(token) => write!(f, "{}: ERROR: Expected `{}` name to be an word", token.location, token.value.string)?,
+            Self::ExpectedNameToBeWord(token) => write!(f, "{}: ERROR: Expected word but got `{}`", token.location, token.value.string)?,
             Self::ReachedEOF => write!(f, "ERROR: Unexpected error: Reached EOF while parsing")?,
             Self::UnknownInstruction(token) => write!(f, "{}: ERROR: Unknown instruction: {}", token.location, token.value.string)?
         }

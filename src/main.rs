@@ -9,10 +9,13 @@ use lexer::*;
 use ir::*;
 use parser::*;
 
-fn main() -> Result<(), LoispError> {
-    let program = "(print (+ 34 35))\n(+ 34 35)\nduawudi";
+use std::fs;
 
-    let lexer = Lexer::from_chars(program.chars(), "joao.txt".to_string());
+fn main() -> Result<(), LoispError> {
+    let file = "test.loisp".to_string();
+    let program = fs::read_to_string(file.as_str())?;
+
+    let lexer = Lexer::from_chars(program.chars(), file);
     let result = construct_instructions_from_tokens(&mut lexer.peekable());
     if let Err(error) = result {
         eprintln!("{}", error);
