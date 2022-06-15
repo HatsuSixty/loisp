@@ -40,7 +40,7 @@ pub struct LexerLocation {
 
 impl fmt::Display for LexerLocation {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}:{}:{}", self.f, self.r, self.c);
+        write!(f, "{}:{}:{}", self.f, self.r, self.c)?;
         Ok(())
     }
 }

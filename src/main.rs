@@ -12,7 +12,7 @@ use parser::*;
 fn main() -> Result<(), LoispError> {
     let program = "(print (+ 34 35))";
 
-    let lexer = Lexer::from_chars(program.chars());
+    let lexer = Lexer::from_chars(program.chars(), String::new());
     let instructions = construct_instructions_from_tokens(&mut lexer.peekable())?;
     let mut ir = IrProgram::new();
 
