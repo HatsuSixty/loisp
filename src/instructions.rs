@@ -1,6 +1,7 @@
 use super::types::*;
 use super::ir::*;
 use super::parser::*;
+use super::lexer::*;
 
 #[derive(Debug)]
 pub enum LoispError {
@@ -50,11 +51,11 @@ pub struct LoispValue {
 }
 
 impl LoispValue {
-    pub fn new() -> LoispValue {
+    pub fn new(t: LexerToken) -> LoispValue {
         LoispValue {
             integer: None,
             string: String::new(),
-            instruction_return: LoispInstruction::new()
+            instruction_return: LoispInstruction::new(t)
         }
     }
 
@@ -81,14 +82,16 @@ impl LoispValue {
 #[derive(Debug)]
 pub struct LoispInstruction {
     pub kind: LoispInstructionType,
-    pub parameters: Vec<LoispValue>
+    pub parameters: Vec<LoispValue>,
+    pub token: LexerToken
 }
 
 impl LoispInstruction {
-    pub fn new() -> LoispInstruction {
+    pub fn new(t: LexerToken) -> LoispInstruction {
         LoispInstruction {
             kind: LoispInstructionType::Nop,
-            parameters: vec![]
+            parameters: vec![],
+            token: t
         }
     }
 

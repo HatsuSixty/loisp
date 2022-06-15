@@ -1,7 +1,7 @@
 use std::iter::Peekable;
 use std::fmt;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum LexerTokenKind {
     OpenParen,
     CloseParen,
@@ -9,7 +9,7 @@ pub enum LexerTokenKind {
     Integer
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LexerTokenValue {
     pub integer: i64,
     pub string: String
@@ -55,7 +55,7 @@ impl LexerLocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LexerToken {
     pub kind: LexerTokenKind,
     pub value: LexerTokenValue,

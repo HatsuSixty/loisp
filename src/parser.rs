@@ -22,7 +22,12 @@ pub fn string_to_instruction_kind(string: String) -> Result<LoispInstructionType
 }
 
 pub fn parse_instruction(lexer: &mut lexer_type!()) -> Result<LoispInstruction, ParserError> {
-    let mut instruction = LoispInstruction::new();
+    let mut instruction = LoispInstruction::new(LexerToken {kind: LexerTokenKind::Word, value: LexerTokenValue {string: String::new(), integer: 0}, location: LexerLocation::new(String::new())});
+    if let Some(t) = lexer.peek() {
+        instruction.token = (*t).clone();
+    } else {
+        return Err(ParserError::ReachedEOF)
+    }
 
     if let Some(name) = lexer.next() {
         if name.kind != LexerTokenKind::Word {
@@ -42,7 +47,7 @@ pub fn parse_instruction(lexer: &mut lexer_type!()) -> Result<LoispInstruction, 
                     break;
                 }
                 OpenParen => {
-                    let mut value = LoispValue::new();
+                    let mut value = LoispValue::new(next.clone());
                     value.instruction_return = parse_instruction(lexer)?;
                     instruction.parameters.push(value);
                 }
@@ -50,7 +55,7 @@ pub fn parse_instruction(lexer: &mut lexer_type!()) -> Result<LoispInstruction, 
                     return Err(ParserError::InvalidSyntax)
                 }
                 Integer => {
-                    let mut value = LoispValue::new();
+                    let mut value = LoispValue::new(next.clone());
                     value.integer = Some(next.value.integer);
                     instruction.parameters.push(value);
                 }
