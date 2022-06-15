@@ -30,19 +30,41 @@ impl LexerTokenValue {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct LexerLocation {
+    pub f: String,
+    pub r: i64,
+    pub c: i64
+}
+
+impl LexerLocation {
+    pub fn new() -> LexerLocation {
+        LexerLocation {
+            f: String::new(),
+            r: 0,
+            c: 0
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct LexerToken {
     pub kind: LexerTokenKind,
-    pub value: LexerTokenValue
+    pub value: LexerTokenValue,
+    pub location: LexerLocation
 }
 
 pub struct Lexer<Chars: Iterator<Item=char>> {
-    pub chars: Peekable<Chars>
+    pub chars: Peekable<Chars>,
+    pub location: LexerLocation
 }
 
 impl<Chars: Iterator<Item=char>> Lexer<Chars> {
     pub fn from_chars(chars: Chars) -> Self {
-        Self { chars: chars.peekable() }
+        Self {
+            chars: chars.peekable(),
+            location: LexerLocation::new()
+        }
     }
 }
 
@@ -56,8 +78,8 @@ impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
             let mut text = "".to_string();
             text.push(x);
             match x {
-                '(' => Some(LexerToken {kind: OpenParen, value: LexerTokenValue::from_string(text)}),
-                ')' => Some(LexerToken {kind: CloseParen, value: LexerTokenValue::from_string(text)}),
+                '(' => Some(LexerToken {kind: OpenParen, value: LexerTokenValue::from_string(text), location: self.location.clone()}),
+                ')' => Some(LexerToken {kind: CloseParen, value: LexerTokenValue::from_string(text), location: self.location.clone()}),
                 _   => {
                     while let Some(x) = self.chars.next_if(|x| x.is_alphanumeric()) {
                         text.push(x);
@@ -65,9 +87,9 @@ impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
 
                     let parsed = text.parse::<i64>();
                     if let Err(_) = parsed {
-                        Some(LexerToken {kind: Word, value: LexerTokenValue::from_string(text)})
+                        Some(LexerToken {kind: Word, value: LexerTokenValue::from_string(text), location: self.location.clone()})
                     } else {
-                        Some(LexerToken {kind: Integer, value: LexerTokenValue::from_int(parsed.unwrap())})
+                        Some(LexerToken {kind: Integer, value: LexerTokenValue::from_int(parsed.unwrap()), location: self.location.clone()})
                     }
                 }
             }
