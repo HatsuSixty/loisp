@@ -5,10 +5,10 @@ use super::lexer::*;
 
 #[derive(Debug)]
 pub enum LoispError {
-    NotEnoughParameters(String),
-    TooMuchParameters(String),
-    CantAcceptNothing(String),
-    MismatchedTypes(String),
+    NotEnoughParameters(LexerToken),
+    TooMuchParameters(LexerToken),
+    CantAcceptNothing(LexerToken),
+    MismatchedTypes(LexerToken),
     ParserError(ParserError),
     Unknown
 }
@@ -118,31 +118,31 @@ impl LoispInstruction {
         match self.kind {
             Print => {
                 if self.parameters.len() < 1 {
-                    return Err(NotEnoughParameters("print".to_string()))
+                    return Err(NotEnoughParameters(self.token.clone()))
                 }
 
                 if self.parameters.len() > 1 {
-                    return Err(TooMuchParameters("print".to_string()))
+                    return Err(TooMuchParameters(self.token.clone()))
                 }
 
                 if self.parameters[0].datatype().unwrap() == LoispDatatype::Nothing {
-                    return Err(CantAcceptNothing("print".to_string()))
+                    return Err(CantAcceptNothing(self.token.clone()))
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Print, operand: IrInstructionValue::new()});
             }
             Plus => {
                 if self.parameters.len() < 2 {
-                    return Err(NotEnoughParameters("+".to_string()))
+                    return Err(NotEnoughParameters(self.token.clone()))
                 }
 
                 if self.parameters.len() > 2 {
-                    return Err(TooMuchParameters("+".to_string()))
+                    return Err(TooMuchParameters(self.token.clone()))
                 }
 
                 if !(self.parameters[0].datatype().unwrap() == LoispDatatype::Integer
                      && self.parameters[1].datatype().unwrap() == LoispDatatype::Integer) {
-                    return Err(MismatchedTypes("+".to_string()))
+                    return Err(MismatchedTypes(self.token.clone()))
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Plus, operand: IrInstructionValue::new()});
