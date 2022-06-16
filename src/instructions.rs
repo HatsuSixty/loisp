@@ -46,6 +46,7 @@ impl From<ParserError> for LoispError {
 pub enum LoispInstructionType {
     Print,
     Plus,
+    Minus,
     Nop
 }
 
@@ -55,7 +56,8 @@ impl LoispInstructionType {
         match self {
             Self::Print => Nothing,
             Self::Nop   => Nothing,
-            Self::Plus  => Integer
+            Self::Plus  => Integer,
+            Self::Minus => Integer
         }
     }
 }
@@ -163,6 +165,22 @@ impl LoispInstruction {
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Plus, operand: IrInstructionValue::new()});
+            }
+            Minus => {
+                if self.parameters.len() < 2 {
+                    return Err(NotEnoughParameters(self.token.clone()))
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(TooMuchParameters(self.token.clone()))
+                }
+
+                if !(self.parameters[0].datatype().unwrap() == LoispDatatype::Integer
+                     && self.parameters[1].datatype().unwrap() == LoispDatatype::Integer) {
+                    return Err(MismatchedTypes(self.token.clone()))
+                }
+
+                ir.push(IrInstruction {kind: IrInstructionKind::Minus, operand: IrInstructionValue::new()});
             }
             Nop => {}
         }

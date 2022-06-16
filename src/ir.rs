@@ -8,6 +8,7 @@ use std::io::*;
 pub enum IrInstructionKind {
     PushInteger,
     Plus,
+    Minus,
     Print
 }
 
@@ -54,6 +55,12 @@ impl IrInstruction {
                 writeln!(f, "pop rax")?;
                 writeln!(f, "pop rbx")?;
                 writeln!(f, "add rax, rbx")?;
+                writeln!(f, "push rax")?;
+            }
+            Minus => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "sub rax, rbx")?;
                 writeln!(f, "push rax")?;
             }
         }
