@@ -4,6 +4,7 @@ use super::parser::*;
 use super::lexer::*;
 
 use std::fmt;
+use std::io;
 
 #[derive(Debug)]
 pub enum LoispError {
@@ -12,7 +13,7 @@ pub enum LoispError {
     CantAcceptNothing(LexerToken),
     MismatchedTypes(LexerToken),
     ParserError(ParserError),
-    Unknown
+    StandardError(io::Error)
 }
 
 impl fmt::Display for LoispError {
@@ -23,15 +24,15 @@ impl fmt::Display for LoispError {
             Self::CantAcceptNothing(token) => write!(f, "{}: ERROR: The function `{}` can't accept value of type `Nothing`", token.location, token.value.string)?,
             Self::MismatchedTypes(token) => write!(f, "{}: ERROR: Mismatched types on parameter for function `{}`", token.location, token.value.string)?,
             Self::ParserError(error) => write!(f, "{}", error)?,
-            Self::Unknown => write!(f, "ERROR: Unknown error")?
+            Self::StandardError(error) => write!(f, "ERROR: {:?}", error)?
         }
         Ok(())
     }
 }
 
 impl From<std::io::Error> for LoispError {
-    fn from(_: std::io::Error) -> Self {
-        Self::Unknown
+    fn from(e: std::io::Error) -> Self {
+        Self::StandardError(e)
     }
 }
 

@@ -1,5 +1,7 @@
-use std::fs::File;
-use std::fs::OpenOptions;
+use super::parser::*;
+use super::lexer::*;
+
+use std::fs;
 use std::io::*;
 
 #[derive(Debug)]
@@ -36,7 +38,7 @@ pub struct IrInstruction {
 }
 
 impl IrInstruction {
-    pub fn to_nasm_linux_x86_64_assembly(&self, f: &mut File) -> Result<()> {
+    pub fn to_nasm_linux_x86_64_assembly(&self, f: &mut fs::File) -> Result<()> {
         use IrInstructionKind::*;
 
         match self.kind {
@@ -76,7 +78,7 @@ impl IrProgram {
     }
 
     pub fn to_nasm_linux_x86_64_assembly(&self, output: String) -> Result<()> {
-        let mut f = OpenOptions::new()
+        let mut f = fs::OpenOptions::new()
             .create(true)
             .truncate(true)
             .write(true)
@@ -130,4 +132,27 @@ impl IrProgram {
 
         Ok(())
     }
+}
+
+pub fn compile_file_into_ir(f: String) -> Result<IrProgram> {
+    let source = fs::read_to_string(f.as_str())?;
+    let lexer = Lexer::from_chars(source.chars(), f);
+
+    let result = construct_instructions_from_tokens(&mut lexer.peekable());
+    if let Err(error) = result {
+        eprintln!("{}", error);
+        std::process::exit(1);
+    }
+    let instructions = result.unwrap();
+
+    let mut ir = IrProgram::new();
+    for i in instructions {
+        let result = i.to_ir(&mut ir);
+        if let Err(error) = result {
+            eprintln!("{}", error);
+            std::process::exit(1);
+        }
+    }
+
+    Ok(ir)
 }
