@@ -9,6 +9,8 @@ pub enum IrInstructionKind {
     PushInteger,
     Plus,
     Minus,
+    Multiplication,
+    Division,
     Print
 }
 
@@ -61,6 +63,18 @@ impl IrInstruction {
                 writeln!(f, "pop rax")?;
                 writeln!(f, "pop rbx")?;
                 writeln!(f, "sub rax, rbx")?;
+                writeln!(f, "push rax")?;
+            }
+            Multiplication => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "mul rbx")?;
+                writeln!(f, "push rax")?;
+            }
+            Division => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "div rbx")?;
                 writeln!(f, "push rax")?;
             }
         }

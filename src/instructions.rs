@@ -47,6 +47,8 @@ pub enum LoispInstructionType {
     Print,
     Plus,
     Minus,
+    Multiplication,
+    Division,
     Nop
 }
 
@@ -54,10 +56,12 @@ impl LoispInstructionType {
     pub fn return_type(&self) -> LoispDatatype {
         use LoispDatatype::*;
         match self {
-            Self::Print => Nothing,
-            Self::Nop   => Nothing,
-            Self::Plus  => Integer,
-            Self::Minus => Integer
+            Self::Print          => Nothing,
+            Self::Nop            => Nothing,
+            Self::Plus           => Integer,
+            Self::Minus          => Integer,
+            Self::Multiplication => Integer,
+            Self::Division       => Integer
         }
     }
 }
@@ -181,6 +185,38 @@ impl LoispInstruction {
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Minus, operand: IrInstructionValue::new()});
+            }
+            Multiplication => {
+                if self.parameters.len() < 2 {
+                    return Err(NotEnoughParameters(self.token.clone()))
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(TooMuchParameters(self.token.clone()))
+                }
+
+                if !(self.parameters[0].datatype().unwrap() == LoispDatatype::Integer
+                     && self.parameters[1].datatype().unwrap() == LoispDatatype::Integer) {
+                    return Err(MismatchedTypes(self.token.clone()))
+                }
+
+                ir.push(IrInstruction {kind: IrInstructionKind::Multiplication, operand: IrInstructionValue::new()});
+            }
+            Division => {
+                if self.parameters.len() < 2 {
+                    return Err(NotEnoughParameters(self.token.clone()))
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(TooMuchParameters(self.token.clone()))
+                }
+
+                if !(self.parameters[0].datatype().unwrap() == LoispDatatype::Integer
+                     && self.parameters[1].datatype().unwrap() == LoispDatatype::Integer) {
+                    return Err(MismatchedTypes(self.token.clone()))
+                }
+
+                ir.push(IrInstruction {kind: IrInstructionKind::Division, operand: IrInstructionValue::new()});
             }
             Nop => {}
         }
