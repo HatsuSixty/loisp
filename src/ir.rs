@@ -11,6 +11,7 @@ pub enum IrInstructionKind {
     Minus,
     Multiplication,
     Division,
+    Mod,
     Print
 }
 
@@ -76,6 +77,13 @@ impl IrInstruction {
                 writeln!(f, "pop rbx")?;
                 writeln!(f, "div rbx")?;
                 writeln!(f, "push rax")?;
+            }
+            Mod => {
+                writeln!(f, "xor rdx, rdx")?;
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "div rbx")?;
+                writeln!(f, "push rdx")?;
             }
         }
 

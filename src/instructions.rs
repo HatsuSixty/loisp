@@ -49,6 +49,7 @@ pub enum LoispInstructionType {
     Minus,
     Multiplication,
     Division,
+    Mod,
     Nop
 }
 
@@ -61,7 +62,8 @@ impl LoispInstructionType {
             Self::Plus           => Integer,
             Self::Minus          => Integer,
             Self::Multiplication => Integer,
-            Self::Division       => Integer
+            Self::Division       => Integer,
+            Self::Mod            => Integer
         }
     }
 }
@@ -217,6 +219,22 @@ impl LoispInstruction {
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Division, operand: IrInstructionValue::new()});
+            }
+            Mod => {
+                if self.parameters.len() < 2 {
+                    return Err(NotEnoughParameters(self.token.clone()))
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(TooMuchParameters(self.token.clone()))
+                }
+
+                if !(self.parameters[0].datatype().unwrap() == LoispDatatype::Integer
+                     && self.parameters[1].datatype().unwrap() == LoispDatatype::Integer) {
+                    return Err(MismatchedTypes(self.token.clone()))
+                }
+
+                ir.push(IrInstruction {kind: IrInstructionKind::Mod, operand: IrInstructionValue::new()});
             }
             Nop => {}
         }
