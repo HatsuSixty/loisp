@@ -4,6 +4,18 @@ use super::lexer::*;
 use std::fs;
 use std::io::*;
 
+pub fn syscall_number_as_register(n: i64) -> String {
+    match n {
+        0 => "rax".to_string(),
+        1 => "rdi".to_string(),
+        2 => "rsi".to_string(),
+        3 => "r10".to_string(),
+        4 => "r8".to_string(),
+        5 => "r9".to_string(),
+        _ => "invalid".to_string()
+    }
+}
+
 #[derive(Debug)]
 pub enum IrInstructionKind {
     PushInteger,
@@ -12,6 +24,7 @@ pub enum IrInstructionKind {
     Multiplication,
     Division,
     Mod,
+    Syscall,
     Print
 }
 
@@ -84,6 +97,13 @@ impl IrInstruction {
                 writeln!(f, "pop rbx")?;
                 writeln!(f, "div rbx")?;
                 writeln!(f, "push rdx")?;
+            }
+            Syscall => {
+                for i in 0..self.operand.integer {
+                    writeln!(f, "pop {}", syscall_number_as_register(i))?;
+                }
+                writeln!(f, "syscall")?;
+                writeln!(f, "push rax")?;
             }
         }
 

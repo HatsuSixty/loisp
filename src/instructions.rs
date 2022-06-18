@@ -50,6 +50,7 @@ pub enum LoispInstructionType {
     Multiplication,
     Division,
     Mod,
+    Syscall,
     Nop
 }
 
@@ -63,7 +64,8 @@ impl LoispInstructionType {
             Self::Minus          => Integer,
             Self::Multiplication => Integer,
             Self::Division       => Integer,
-            Self::Mod            => Integer
+            Self::Mod            => Integer,
+            Self::Syscall        => Integer
         }
     }
 }
@@ -235,6 +237,23 @@ impl LoispInstruction {
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Mod, operand: IrInstructionValue::new()});
+            }
+            Syscall => {
+                if self.parameters.len() > 6 {
+                    return Err(TooMuchParameters(self.token.clone()))
+                }
+
+                if self.parameters.len() < 2 {
+                    return Err(NotEnoughParameters(self.token.clone()))
+                }
+
+                for v in &self.parameters {
+                    if v.datatype().unwrap() != LoispDatatype::Integer {
+                        return Err(MismatchedTypes(self.token.clone()))
+                    }
+                }
+
+                ir.push(IrInstruction {kind: IrInstructionKind::Syscall, operand: IrInstructionValue::new().integer(self.parameters.len() as i64)});
             }
             Nop => {}
         }

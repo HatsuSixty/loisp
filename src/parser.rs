@@ -35,6 +35,7 @@ pub fn token_to_instruction_kind(token: LexerToken) -> Result<LoispInstructionTy
         "*" => Ok(LoispInstructionType::Multiplication),
         "/" => Ok(LoispInstructionType::Division),
         "%" => Ok(LoispInstructionType::Mod),
+        "syscall" => Ok(LoispInstructionType::Syscall),
         _ => Err(ParserError::UnknownInstruction(token.clone()))
     }
 }
