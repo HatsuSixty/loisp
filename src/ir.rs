@@ -1,5 +1,6 @@
 use super::parser::*;
 use super::lexer::*;
+use super::common::*;
 
 use std::fs;
 use std::io::*;
@@ -134,6 +135,7 @@ impl IrProgram {
             .open(output)
             .expect("Could not open file {}");
 
+        writeln!(f, "BITS 64")?;
         writeln!(f, "print:")?;
         writeln!(f, "mov r9, -3689348814741910323")?;
         writeln!(f, "sub rsp, 40")?;
@@ -204,4 +206,27 @@ pub fn compile_file_into_ir(f: String) -> Result<IrProgram> {
     }
 
     Ok(ir)
+}
+
+pub fn compile_file_into_assembly(i: &str, o: &str) -> Result<()> {
+    let ir = compile_file_into_ir(i.to_string())?;
+    ir.to_nasm_linux_x86_64_assembly(o.to_string())?;
+    Ok(())
+}
+
+pub fn compile_file_into_executable(i: &str, o: &str) -> Result<()> {
+    let output_assembly = format!("{}.asm", o);
+    let output_object = format!("{}.o", o);
+
+    compile_file_into_assembly(i, output_assembly.as_str())?;
+
+    let assembler_command =
+        format!("yasm -gdwarf2 -felf64 {} -o {}", output_assembly, output_object);
+    let linker_command =
+        format!("ld -o {} {}", o, output_object);
+
+    run_command_with_info(assembler_command)?;
+    run_command_with_info(linker_command)?;
+
+    Ok(())
 }

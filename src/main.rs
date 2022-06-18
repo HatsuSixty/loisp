@@ -3,13 +3,12 @@ mod types;
 mod ir;
 mod lexer;
 mod parser;
+mod common;
 
 use instructions::*;
 use ir::*;
 
 fn main() -> Result<(), LoispError> {
-    let ir = compile_file_into_ir("test.loisp".to_string())?;
-
-    ir.to_nasm_linux_x86_64_assembly("output.asm".to_string())?;
+    compile_file_into_executable("test.loisp", "output")?;
     Ok(())
 }
