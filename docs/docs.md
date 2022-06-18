@@ -24,14 +24,12 @@ The fact that this language is S-expression based is given by the fact that, the
 
 The available instructios are the following:
 
-| Instruction | Purpose                                                        |
-|-------------|----------------------------------------------------------------|
-| `print`     | Prints the value given as parameter                            |
-| `+`         | Return the sum of two values given as parameters               |
-| `-`         | Return the difference between two values given as parameter    |
-| `*`         | Return the result of the multiplication between the parameters |
-| `/`         | Return the result of the division between the parameters       |
-| `%`         | Return the rest of the division between the parameters         |
-| `syscall`   | Perform a syscall with the first parameter being the number    |
-|             | of the syscall and the rest of the parameters being passed to  |
-|             | the syscall                                                    |
+| Instruction | Purpose                                                                                                                               |
+|-------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `print`     | Prints the value given as parameter                                                                                                   |
+| `+`         | Return the sum of two values given as parameters                                                                                      |
+| `-`         | Return the difference between two values given as parameter                                                                           |
+| `*`         | Return the result of the multiplication between the parameters                                                                        |
+| `/`         | Return the result of the division between the parameters                                                                              |
+| `%`         | Return the rest of the division between the parameters                                                                                |
+| `syscall`   | Perform a syscall with the first parameter being the number of the syscall and the rest of the parameters being passed to the syscall |
