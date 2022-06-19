@@ -1,3 +1,5 @@
+use super::config::*;
+
 use std::process::{Command, Stdio};
 use std::io;
 use std::env;
@@ -12,8 +14,10 @@ macro_rules! print_info {
     }};
 }
 
-pub fn run_command_with_info(cmd: String) -> io::Result<()> {
-    print_info!("CMD: {}", cmd);
+pub fn run_command_with_info(cmd: String, config: Config) -> io::Result<()> {
+    if !config.silent {
+        print_info!("CMD: {}", cmd)
+    }
 
     let mut shell_cmd = Command::new("sh");
     shell_cmd.args(["-c", cmd.as_str()]);

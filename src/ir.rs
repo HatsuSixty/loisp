@@ -1,6 +1,7 @@
 use super::parser::*;
 use super::lexer::*;
 use super::common::*;
+use super::config::*;
 
 use std::fs;
 use std::io::*;
@@ -214,19 +215,22 @@ pub fn compile_file_into_assembly(i: &str, o: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn compile_file_into_executable(i: &str, o: &str) -> Result<()> {
-    let output_assembly = format!("{}.asm", o);
-    let output_object = format!("{}.o", o);
+pub fn compile_file_into_executable(config: Config) -> Result<()> {
+    let output_assembly = format!("{}.asm", config.output);
+    let output_object = format!("{}.o", config.output);
 
-    compile_file_into_assembly(i, output_assembly.as_str())?;
+    compile_file_into_assembly(config.input.as_str(), output_assembly.as_str())?;
 
     let assembler_command =
         format!("yasm -gdwarf2 -felf64 {} -o {}", output_assembly, output_object);
     let linker_command =
-        format!("ld -o {} {}", o, output_object);
+        format!("ld -o {} {}", config.output, output_object);
 
-    run_command_with_info(assembler_command)?;
-    run_command_with_info(linker_command)?;
+    run_command_with_info(assembler_command, config.clone())?;
+    run_command_with_info(linker_command, config.clone())?;
+    if config.run {
+        run_command_with_info(format!("./{}", config.output), config)?;
+    }
 
     Ok(())
 }
