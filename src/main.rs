@@ -13,6 +13,23 @@ use config::*;
 use std::env;
 use std::ffi::OsString;
 
+fn usage(stderr: bool) {
+    let help =
+        "Usage: loisp [FLAGS] <SUBCOMMAND>
+    Subcommands:
+        build <file>   Compile <file> into an executable
+        run   <file>   Compile <file> into an executable and run the generated executable
+        help           Prints this help to stdout and exits with 0 exit code
+    Flags:
+        -s             Do not show any output (except errors)
+        -o <file>      Change the name of the executable that gets generated\n";
+    if stderr {
+        eprint!("{}", help)
+    } else {
+        print!("{}", help)
+    }
+}
+
 fn shift(args: &mut Vec<OsString>) -> Option<String> {
     if args.len() < 1 {
         return None;
@@ -27,6 +44,7 @@ fn main() -> Result<(), LoispError> {
     shift(&mut args);
 
     if args.len() < 1 {
+        usage(true);
         eprintln!("ERROR: No subcommand was provided");
         std::process::exit(1)
     }
@@ -42,6 +60,7 @@ fn main() -> Result<(), LoispError> {
                     if let Some(i) = shift(&mut args) {
                         input = i
                     } else {
+                        usage(true);
                         eprintln!("ERROR: No input file was provided");
                         std::process::exit(1)
                     }
@@ -52,10 +71,15 @@ fn main() -> Result<(), LoispError> {
                         input = i;
                         run = true
                     } else {
+                        usage(true);
                         eprintln!("ERROR: No input file was provided");
                         std::process::exit(1)
                     }
                     break
+                }
+                "help" => {
+                    usage(false);
+                    std::process::exit(0);
                 }
                 "-s" => {
                     silent = true
@@ -64,11 +88,13 @@ fn main() -> Result<(), LoispError> {
                     if let Some(o) = shift(&mut args) {
                         output = o
                     } else {
+                        usage(true);
                         eprintln!("ERROR: No output file was provided");
                         std::process::exit(1)
                     }
                 }
                 _ => {
+                    usage(true);
                     eprintln!("ERROR: Unknown subcommand: {}", arg);
                     std::process::exit(1)
                 }
@@ -82,7 +108,9 @@ fn main() -> Result<(), LoispError> {
     config.input = input;
     config.silent = silent;
 
-    print_info!("Compiling `{}`", config.input);
+    if !config.silent {
+        print_info!("Compiling `{}`", config.input);
+    }
 
     compile_file_into_executable(config)?;
     Ok(())
