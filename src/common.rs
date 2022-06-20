@@ -14,6 +14,17 @@ macro_rules! print_info {
     }};
 }
 
+pub fn file_name_without_extension(f: String) -> String {
+    let mut input_file_extension = String::new();
+    for c in f.chars().rev() {
+        input_file_extension.insert(0, c);
+        if c == '.' {
+            break;
+        }
+    }
+    f.as_str().replace(input_file_extension.as_str().trim(), "")
+}
+
 pub fn run_command_with_info(cmd: String, config: Config) -> io::Result<()> {
     if !config.silent {
         print_info!("CMD: {}", cmd)

@@ -3,7 +3,7 @@ pub struct Config {
     pub silent: bool,
     pub run: bool,
     pub input: String,
-    pub output: String
+    pub output: Option<String>
 }
 
 impl Config {
@@ -12,7 +12,7 @@ impl Config {
             silent: false,
             run: false,
             input: String::new(),
-            output: String::new()
+            output: None
         }
     }
 }

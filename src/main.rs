@@ -52,7 +52,7 @@ fn main() -> Result<(), LoispError> {
     let mut run = false;
     let mut silent = false;
     let mut input = String::new();
-    let mut output = "output".to_string();
+    let mut output = None;
     while args.len() > 0 {
         if let Some(arg) = shift(&mut args) {
             match arg.as_str() {
@@ -86,7 +86,7 @@ fn main() -> Result<(), LoispError> {
                 }
                 "-o" => {
                     if let Some(o) = shift(&mut args) {
-                        output = o
+                        output = Some(o)
                     } else {
                         usage(true);
                         eprintln!("ERROR: No output file was provided");

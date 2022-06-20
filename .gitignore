@@ -2,4 +2,6 @@
 Cargo.lock
 *~
 output*
-test.loisp
+*.asm
+*.o
+test*

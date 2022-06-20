@@ -216,20 +216,29 @@ pub fn compile_file_into_assembly(i: &str, o: &str) -> Result<()> {
 }
 
 pub fn compile_file_into_executable(config: Config) -> Result<()> {
-    let output_assembly = format!("{}.asm", config.output);
-    let output_object = format!("{}.o", config.output);
+    let config_output: String;
+    {
+        let c = config.clone();
+        if let Some(o) = c.output {
+            config_output = o;
+        } else {
+            config_output = file_name_without_extension(c.input);
+        }
+    }
+    let output_assembly = format!("{}.asm", config_output);
+    let output_object = format!("{}.o", config_output);
 
     compile_file_into_assembly(config.input.as_str(), output_assembly.as_str())?;
 
     let assembler_command =
         format!("yasm -gdwarf2 -felf64 {} -o {}", output_assembly, output_object);
     let linker_command =
-        format!("ld -o {} {}", config.output, output_object);
+        format!("ld -o {} {}", config_output, output_object);
 
     run_command_with_info(assembler_command, config.clone())?;
     run_command_with_info(linker_command, config.clone())?;
     if config.run {
-        run_command_with_info(format!("./{}", config.output), config)?;
+        run_command_with_info(format!("./{}", config_output), config)?;
     }
 
     Ok(())
