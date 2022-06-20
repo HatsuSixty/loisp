@@ -2,6 +2,7 @@ use super::parser::*;
 use super::lexer::*;
 use super::common::*;
 use super::config::*;
+use super::print_info;
 
 use std::fs;
 use std::io::*;
@@ -57,7 +58,7 @@ pub struct IrInstruction {
 }
 
 impl IrInstruction {
-    pub fn to_nasm_linux_x86_64_assembly(&self, f: &mut fs::File) -> Result<()> {
+    pub fn to_intel_linux_x86_64_assembly(&self, f: &mut fs::File) -> Result<()> {
         use IrInstructionKind::*;
 
         match self.kind {
@@ -128,7 +129,11 @@ impl IrProgram {
         self.instructions.push(i)
     }
 
-    pub fn to_fasm_linux_x86_64_assembly(&self, output: String) -> Result<()> {
+    pub fn to_fasm_linux_x86_64_assembly(&self, output: String, config: Config) -> Result<()> {
+        if !config.silent {
+            print_info!("Generating `{}`", output);
+        }
+
         let mut f = fs::OpenOptions::new()
             .create(true)
             .truncate(true)
@@ -175,7 +180,7 @@ impl IrProgram {
 
         for i in &self.instructions {
             writeln!(f, ";; -- {:?} --", i.kind)?;
-            i.to_nasm_linux_x86_64_assembly(&mut f)?;
+            i.to_intel_linux_x86_64_assembly(&mut f)?;
         }
 
         writeln!(f, "mov rax, 60")?;
@@ -209,9 +214,9 @@ pub fn compile_file_into_ir(f: String) -> Result<IrProgram> {
     Ok(ir)
 }
 
-pub fn compile_file_into_assembly(i: &str, o: &str) -> Result<()> {
+pub fn compile_file_into_assembly(i: &str, o: &str, config: Config) -> Result<()> {
     let ir = compile_file_into_ir(i.to_string())?;
-    ir.to_fasm_linux_x86_64_assembly(o.to_string())?;
+    ir.to_fasm_linux_x86_64_assembly(o.to_string(), config.clone())?;
     Ok(())
 }
 
@@ -228,7 +233,7 @@ pub fn compile_file_into_executable(config: Config) -> Result<()> {
     let output_assembly = format!("{}.asm", config_output);
     let output_executable = format!("{}.tmp", config_output);
 
-    compile_file_into_assembly(config.input.as_str(), output_assembly.as_str())?;
+    compile_file_into_assembly(config.input.as_str(), output_assembly.as_str(), config.clone())?;
 
     let assembler_command =
         format!("fasm -m 524288 {} {}", output_assembly, output_executable);
