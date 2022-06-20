@@ -131,7 +131,7 @@ impl IrProgram {
 
     pub fn to_fasm_linux_x86_64_assembly(&self, output: String, config: Config) -> Result<()> {
         if !config.silent {
-            print_info!("Generating `{}`", output);
+            print_info!("INFO", "Generating `{}`", output);
         }
 
         let mut f = fs::OpenOptions::new()

@@ -117,7 +117,7 @@ fn main() -> Result<(), LoispError> {
     config.input = input;
 
     if !config.silent {
-        print_info!("Compiling `{}`", config.input);
+        print_info!("INFO", "Compiling `{}`", config.input);
     }
 
     compile_file_into_executable(config)?;
