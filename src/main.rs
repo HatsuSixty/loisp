@@ -51,6 +51,7 @@ fn main() -> Result<(), LoispError> {
 
     let mut run = false;
     let mut silent = false;
+    let mut piped = false;
     let mut input = String::new();
     let mut output = None;
     while args.len() > 0 {
@@ -82,7 +83,8 @@ fn main() -> Result<(), LoispError> {
                     std::process::exit(0);
                 }
                 "-s" => {
-                    silent = true
+                    silent = true;
+                    piped = true
                 }
                 "-o" => {
                     if let Some(o) = shift(&mut args) {
@@ -104,9 +106,10 @@ fn main() -> Result<(), LoispError> {
 
     let mut config = Config::new();
     config.run = run;
+    config.silent = silent;
+    config.piped = piped;
     config.output = output;
     config.input = input;
-    config.silent = silent;
 
     if !config.silent {
         print_info!("Compiling `{}`", config.input);

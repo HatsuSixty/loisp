@@ -128,7 +128,7 @@ impl IrProgram {
         self.instructions.push(i)
     }
 
-    pub fn to_nasm_linux_x86_64_assembly(&self, output: String) -> Result<()> {
+    pub fn to_fasm_linux_x86_64_assembly(&self, output: String) -> Result<()> {
         let mut f = fs::OpenOptions::new()
             .create(true)
             .truncate(true)
@@ -136,7 +136,7 @@ impl IrProgram {
             .open(output)
             .expect("Could not open file {}");
 
-        writeln!(f, "BITS 64")?;
+        writeln!(f, "format ELF64 executable 3")?;
         writeln!(f, "print:")?;
         writeln!(f, "mov r9, -3689348814741910323")?;
         writeln!(f, "sub rsp, 40")?;
@@ -170,8 +170,8 @@ impl IrProgram {
         writeln!(f, "syscall")?;
         writeln!(f, "add rsp, 40")?;
         writeln!(f, "ret")?;
-        writeln!(f, "global _start")?;
-        writeln!(f, "_start:")?;
+        writeln!(f, "entry start")?;
+        writeln!(f, "start:")?;
 
         for i in &self.instructions {
             writeln!(f, ";; -- {:?} --", i.kind)?;
@@ -211,7 +211,7 @@ pub fn compile_file_into_ir(f: String) -> Result<IrProgram> {
 
 pub fn compile_file_into_assembly(i: &str, o: &str) -> Result<()> {
     let ir = compile_file_into_ir(i.to_string())?;
-    ir.to_nasm_linux_x86_64_assembly(o.to_string())?;
+    ir.to_fasm_linux_x86_64_assembly(o.to_string())?;
     Ok(())
 }
 
@@ -226,19 +226,23 @@ pub fn compile_file_into_executable(config: Config) -> Result<()> {
         }
     }
     let output_assembly = format!("{}.asm", config_output);
-    let output_object = format!("{}.o", config_output);
 
     compile_file_into_assembly(config.input.as_str(), output_assembly.as_str())?;
 
     let assembler_command =
-        format!("yasm -gdwarf2 -felf64 {} -o {}", output_assembly, output_object);
-    let linker_command =
-        format!("ld -o {} {}", config_output, output_object);
+        format!("fasm -m 524288 {} {}", output_assembly, config_output);
+    let chmod_command =
+        format!("chmod +x {}", config_output);
 
     run_command_with_info(assembler_command, config.clone())?;
-    run_command_with_info(linker_command, config.clone())?;
-    if config.run {
-        run_command_with_info(format!("./{}", config_output), config)?;
+    run_command_with_info(chmod_command, config.clone())?;
+
+    {
+        let mut c = config.clone();
+        c.piped = false;
+        if config.run {
+            run_command_with_info(format!("./{}", config_output), c)?;
+        }
     }
 
     Ok(())

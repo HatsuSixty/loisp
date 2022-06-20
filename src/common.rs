@@ -7,7 +7,7 @@ use std::env;
 #[macro_export]
 macro_rules! print_info {
     () => {
-        std::print!("\n")
+        std::print!("[INFO]\n")
     };
     ($($arg:tt)*) => {{
         print!("{}", format!("[INFO] {}\n", format!($($arg)*)));
@@ -36,8 +36,12 @@ pub fn run_command_with_info(cmd: String, config: Config) -> io::Result<()> {
     let cwd = format!("{}", env::current_dir()?.display());
     shell_cmd.current_dir(cwd.as_str());
 
+    if !config.piped {
+        shell_cmd.stdout(Stdio::inherit());
+    } else {
+        shell_cmd.stdout(Stdio::null());
+    }
     shell_cmd.stderr(Stdio::inherit());
-    shell_cmd.stdout(Stdio::inherit());
 
     shell_cmd.status().expect(format!("Command {} failed to execute", cmd).as_str());
     Ok(())
