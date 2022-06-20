@@ -4,4 +4,6 @@ Cargo.lock
 output*
 *.asm
 *.o
-test*
+test
+test.loisp
+*.tmp

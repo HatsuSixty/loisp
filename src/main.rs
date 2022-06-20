@@ -50,6 +50,7 @@ fn main() -> Result<(), LoispError> {
     }
 
     let mut run = false;
+    let mut run_flags: Vec<String> = vec![];
     let mut silent = false;
     let mut piped = false;
     let mut input = String::new();
@@ -75,6 +76,9 @@ fn main() -> Result<(), LoispError> {
                         usage(true);
                         eprintln!("ERROR: No input file was provided");
                         std::process::exit(1)
+                    }
+                    while let Some(flag) = shift(&mut args) {
+                        run_flags.push(flag);
                     }
                     break
                 }
@@ -105,7 +109,8 @@ fn main() -> Result<(), LoispError> {
     }
 
     let mut config = Config::new();
-    config.run = run;
+    config.run.run = run;
+    config.run.args = run_flags;
     config.silent = silent;
     config.piped = piped;
     config.output = output;

@@ -226,22 +226,30 @@ pub fn compile_file_into_executable(config: Config) -> Result<()> {
         }
     }
     let output_assembly = format!("{}.asm", config_output);
+    let output_executable = format!("{}.tmp", config_output);
 
     compile_file_into_assembly(config.input.as_str(), output_assembly.as_str())?;
 
     let assembler_command =
-        format!("fasm -m 524288 {} {}", output_assembly, config_output);
+        format!("fasm -m 524288 {} {}", output_assembly, output_executable);
     let chmod_command =
-        format!("chmod +x {}", config_output);
+        format!("chmod +x {}", output_executable);
+    let rename_command =
+        format!("mv {} {}", output_executable, config_output);
 
     run_command_with_info(assembler_command, config.clone())?;
     run_command_with_info(chmod_command, config.clone())?;
+    run_command_with_info(rename_command, config.clone())?;
 
     {
         let mut c = config.clone();
         c.piped = false;
-        if config.run {
-            run_command_with_info(format!("./{}", config_output), c)?;
+        if config.run.run {
+            let mut command = format!("./{}", config_output);
+            for a in config.run.args {
+                command = format!("{} {}", command, a);
+            }
+            run_command_with_info(command, c)?;
         }
     }
 
