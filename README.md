@@ -8,7 +8,7 @@ To compile the generated assembly, the compiler uses the [flat assembler](https:
 
 ```console
 $ echo "(print (+ 34 35))" > test.loisp
-$ cargo run -- run output
+$ cargo run -- run test.loisp
 ```
 
 ## Documentation
