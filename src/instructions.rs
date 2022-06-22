@@ -5,6 +5,7 @@ use super::lexer::*;
 
 use std::fmt;
 use std::io;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum LoispError {
@@ -42,7 +43,7 @@ impl From<ParserError> for LoispError {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LoispInstructionType {
     Print,
     Plus,
@@ -51,6 +52,7 @@ pub enum LoispInstructionType {
     Division,
     Mod,
     Syscall,
+    SetVar,
     Nop
 }
 
@@ -65,15 +67,18 @@ impl LoispInstructionType {
             Self::Multiplication => Integer,
             Self::Division       => Integer,
             Self::Mod            => Integer,
-            Self::Syscall        => Integer
+            Self::Syscall        => Integer,
+            Self::SetVar         => Nothing
         }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LoispValue {
     pub integer: Option<i64>,
+    pub word: Option<String>,
     pub string: String,
+    pub token: LexerToken,
     pub instruction_return: LoispInstruction
 }
 
@@ -81,8 +86,10 @@ impl LoispValue {
     pub fn new(t: LexerToken) -> LoispValue {
         LoispValue {
             integer: None,
+            word: None,
             string: String::new(),
-            instruction_return: LoispInstruction::new(t)
+            token: t.clone(),
+            instruction_return: LoispInstruction::new(t.clone())
         }
     }
 
@@ -95,6 +102,8 @@ impl LoispValue {
 
         if !self.integer.is_none() {
             Some(Integer)
+        } else if !self.word.is_none() {
+            Some(Word)
         } else if self.string.len() != 0 {
             Some(String)
         } else if !self.instruction_return.is_empty() {
@@ -106,11 +115,30 @@ impl LoispValue {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LoispInstruction {
     pub kind: LoispInstructionType,
     pub parameters: Vec<LoispValue>,
     pub token: LexerToken
+}
+
+#[derive(Debug)]
+pub struct LoispVariable {
+    pub id: usize,
+    pub value: LoispValue
+}
+
+#[derive(Debug)]
+pub struct LoispContext {
+    pub variables: HashMap<String, LoispVariable>
+}
+
+impl LoispContext {
+    pub fn new() -> LoispContext {
+        LoispContext {
+            variables: HashMap::new()
+        }
+    }
 }
 
 impl LoispInstruction {
@@ -122,28 +150,33 @@ impl LoispInstruction {
         }
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.kind == LoispInstructionType::Nop && self.parameters.len() == 0
-    }
-
-    pub fn to_ir(&self, ir: &mut IrProgram) -> Result<(), LoispError> {
-        use LoispInstructionType::*;
-        use LoispError::*;
-
+    pub fn push_parameters(&self, ir: &mut IrProgram, context: &mut LoispContext) -> Result<(), LoispError> {
         for p in self.parameters.iter().rev() {
             if p.is_instruction_return() {
-                p.instruction_return.to_ir(ir)?;
+                p.instruction_return.to_ir(ir, context)?;
             } else {
                 match p.datatype() {
                     Some(LoispDatatype::Integer) => ir.push(IrInstruction {kind: IrInstructionKind::PushInteger, operand: IrInstructionValue::new().integer(p.integer.unwrap())}),
+                    Some(LoispDatatype::Word) => return Err(LoispError::ParserError(ParserError::InvalidSyntax(p.token.clone()))),
                     Some(LoispDatatype::String) => todo!("push strings"),
                     _ => panic!("unreachable")
                 }
             }
         }
+        Ok(())
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.kind == LoispInstructionType::Nop && self.parameters.len() == 0
+    }
+
+    pub fn to_ir(&self, ir: &mut IrProgram, context: &mut LoispContext) -> Result<(), LoispError> {
+        use LoispInstructionType::*;
+        use LoispError::*;
 
         match self.kind {
             Print => {
+                self.push_parameters(ir, context)?;
                 if self.parameters.len() < 1 {
                     return Err(NotEnoughParameters(self.token.clone()))
                 }
@@ -159,6 +192,7 @@ impl LoispInstruction {
                 ir.push(IrInstruction {kind: IrInstructionKind::Print, operand: IrInstructionValue::new()});
             }
             Plus => {
+                self.push_parameters(ir, context)?;
                 if self.parameters.len() < 2 {
                     return Err(NotEnoughParameters(self.token.clone()))
                 }
@@ -175,6 +209,7 @@ impl LoispInstruction {
                 ir.push(IrInstruction {kind: IrInstructionKind::Plus, operand: IrInstructionValue::new()});
             }
             Minus => {
+                self.push_parameters(ir, context)?;
                 if self.parameters.len() < 2 {
                     return Err(NotEnoughParameters(self.token.clone()))
                 }
@@ -191,6 +226,7 @@ impl LoispInstruction {
                 ir.push(IrInstruction {kind: IrInstructionKind::Minus, operand: IrInstructionValue::new()});
             }
             Multiplication => {
+                self.push_parameters(ir, context)?;
                 if self.parameters.len() < 2 {
                     return Err(NotEnoughParameters(self.token.clone()))
                 }
@@ -207,6 +243,7 @@ impl LoispInstruction {
                 ir.push(IrInstruction {kind: IrInstructionKind::Multiplication, operand: IrInstructionValue::new()});
             }
             Division => {
+                self.push_parameters(ir, context)?;
                 if self.parameters.len() < 2 {
                     return Err(NotEnoughParameters(self.token.clone()))
                 }
@@ -223,6 +260,7 @@ impl LoispInstruction {
                 ir.push(IrInstruction {kind: IrInstructionKind::Division, operand: IrInstructionValue::new()});
             }
             Mod => {
+                self.push_parameters(ir, context)?;
                 if self.parameters.len() < 2 {
                     return Err(NotEnoughParameters(self.token.clone()))
                 }
@@ -239,6 +277,7 @@ impl LoispInstruction {
                 ir.push(IrInstruction {kind: IrInstructionKind::Mod, operand: IrInstructionValue::new()});
             }
             Syscall => {
+                self.push_parameters(ir, context)?;
                 if self.parameters.len() > 6 {
                     return Err(TooMuchParameters(self.token.clone()))
                 }
@@ -254,6 +293,27 @@ impl LoispInstruction {
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Syscall, operand: IrInstructionValue::new().integer(self.parameters.len() as i64)});
+            }
+            SetVar => {
+                if self.parameters.len() < 2 {
+                    return Err(NotEnoughParameters(self.token.clone()))
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(TooMuchParameters(self.token.clone()))
+                }
+
+                if self.parameters[0].datatype().unwrap() != LoispDatatype::Word {
+                    return Err(MismatchedTypes(self.token.clone()))
+                }
+
+                let variable = LoispVariable {
+                    id: context.variables.len(),
+                    value: self.parameters[1].clone()
+                };
+                context.variables.insert(self.parameters[0].clone().word.unwrap(), variable);
+                println!("{:?}", context);
+                todo!("Compile variables")
             }
             Nop => {}
         }

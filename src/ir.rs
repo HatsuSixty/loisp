@@ -1,3 +1,4 @@
+use super::instructions::*;
 use super::parser::*;
 use super::lexer::*;
 use super::common::*;
@@ -194,6 +195,7 @@ impl IrProgram {
 pub fn compile_file_into_ir(f: String) -> Result<IrProgram> {
     let source = fs::read_to_string(f.as_str())?;
     let lexer = Lexer::from_chars(source.chars(), f);
+    let mut context = LoispContext::new();
 
     let result = construct_instructions_from_tokens(&mut lexer.peekable());
     if let Err(error) = result {
@@ -204,7 +206,7 @@ pub fn compile_file_into_ir(f: String) -> Result<IrProgram> {
 
     let mut ir = IrProgram::new();
     for i in instructions {
-        let result = i.to_ir(&mut ir);
+        let result = i.to_ir(&mut ir, &mut context);
         if let Err(error) = result {
             eprintln!("{}", error);
             std::process::exit(1);
