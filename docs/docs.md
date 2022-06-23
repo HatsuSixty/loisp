@@ -33,3 +33,5 @@ The available instructios are the following:
 | `/`         | Return the result of the division between the parameters                                                                              |
 | `%`         | Return the rest of the division between the parameters                                                                                |
 | `syscall`   | Perform a syscall with the first parameter being the number of the syscall and the rest of the parameters being passed to the syscall |
+| `setvar`    | Create a variable with the name given as first parameter and set the value of that variable to the value of the second parameter      |
+| `getvar`    | Return the value of the variable name given as first parameter                                                                        |

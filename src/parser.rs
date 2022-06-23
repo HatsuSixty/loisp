@@ -36,6 +36,8 @@ pub fn token_to_instruction_kind(token: LexerToken) -> Result<LoispInstructionTy
         "/" => Ok(LoispInstructionType::Division),
         "%" => Ok(LoispInstructionType::Mod),
         "syscall" => Ok(LoispInstructionType::Syscall),
+        "setvar" => Ok(LoispInstructionType::SetVar),
+        "getvar" => Ok(LoispInstructionType::GetVar),
         _ => Err(ParserError::UnknownInstruction(token.clone()))
     }
 }
@@ -72,7 +74,9 @@ pub fn parse_instruction(lexer: &mut lexer_type!(), token: LexerToken) -> Result
                     instruction.parameters.push(value);
                 }
                 Word => {
-                    return Err(ParserError::InvalidSyntax(next.clone()))
+                    let mut value = LoispValue::new(next.clone());
+                    value.word = Some(next.value.string);
+                    instruction.parameters.push(value);
                 }
                 Integer => {
                     let mut value = LoispValue::new(next.clone());
