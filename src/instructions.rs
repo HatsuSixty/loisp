@@ -11,7 +11,6 @@ use std::collections::HashMap;
 pub enum LoispError {
     NotEnoughParameters(LexerToken),
     TooMuchParameters(LexerToken),
-    CantAcceptNothing(LexerToken),
     MismatchedTypes(LexerToken),
     ParserError(ParserError),
     StandardError(io::Error),
@@ -24,7 +23,6 @@ impl fmt::Display for LoispError {
         match self {
             Self::NotEnoughParameters(token) => write!(f, "{}: ERROR: Not enough parameters for `{}`", token.location, token.value.string)?,
             Self::TooMuchParameters(token) => write!(f, "{}: ERROR: Too much parameters for `{}`", token.location, token.value.string)?,
-            Self::CantAcceptNothing(token) => write!(f, "{}: ERROR: The function `{}` can't accept value of type `Nothing`", token.location, token.value.string)?,
             Self::MismatchedTypes(token) => write!(f, "{}: ERROR: Mismatched types on parameter for function `{}`", token.location, token.value.string)?,
             Self::ParserError(error) => write!(f, "{}", error)?,
             Self::StandardError(error) => write!(f, "ERROR: {:?}", error)?,
@@ -201,7 +199,7 @@ impl LoispInstruction {
                 }
 
                 if self.parameters[0].datatype(context).unwrap() == LoispDatatype::Nothing {
-                    return Err(LoispError::CantAcceptNothing(self.token.clone()))
+                    return Err(LoispError::MismatchedTypes(self.token.clone()))
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Print, operand: IrInstructionValue::new()});
