@@ -18,6 +18,16 @@ pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram) {
     }
 }
 
+pub fn value_size_as_load_instruction(s: usize, ir: &mut IrProgram) {
+    match s {
+        1 => ir.push(IrInstruction {kind: IrInstructionKind::Load8, operand: IrInstructionValue::new()}),
+        2 => ir.push(IrInstruction {kind: IrInstructionKind::Load16, operand: IrInstructionValue::new()}),
+        4 => ir.push(IrInstruction {kind: IrInstructionKind::Load32, operand: IrInstructionValue::new()}),
+        8 => ir.push(IrInstruction {kind: IrInstructionKind::Load64, operand: IrInstructionValue::new()}),
+        _ => panic!("unreachable")
+    }
+}
+
 pub fn syscall_number_as_register(n: i64) -> String {
     match n {
         0 => "rax".to_string(),
