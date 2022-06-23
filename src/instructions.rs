@@ -113,16 +113,13 @@ impl LoispValue {
             None
         }
     }
+
+    pub fn size(&self) -> usize {
+        self.datatype().unwrap().size()
+    }
 }
 
 #[derive(Debug, Clone)]
-pub struct LoispInstruction {
-    pub kind: LoispInstructionType,
-    pub parameters: Vec<LoispValue>,
-    pub token: LexerToken
-}
-
-#[derive(Debug)]
 pub struct LoispVariable {
     pub id: usize,
     pub value: LoispValue
@@ -139,6 +136,13 @@ impl LoispContext {
             variables: HashMap::new()
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct LoispInstruction {
+    pub kind: LoispInstructionType,
+    pub parameters: Vec<LoispValue>,
+    pub token: LexerToken
 }
 
 impl LoispInstruction {
@@ -172,21 +176,20 @@ impl LoispInstruction {
 
     pub fn to_ir(&self, ir: &mut IrProgram, context: &mut LoispContext) -> Result<(), LoispError> {
         use LoispInstructionType::*;
-        use LoispError::*;
 
         match self.kind {
             Print => {
                 self.push_parameters(ir, context)?;
                 if self.parameters.len() < 1 {
-                    return Err(NotEnoughParameters(self.token.clone()))
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()))
                 }
 
                 if self.parameters.len() > 1 {
-                    return Err(TooMuchParameters(self.token.clone()))
+                    return Err(LoispError::TooMuchParameters(self.token.clone()))
                 }
 
                 if self.parameters[0].datatype().unwrap() == LoispDatatype::Nothing {
-                    return Err(CantAcceptNothing(self.token.clone()))
+                    return Err(LoispError::CantAcceptNothing(self.token.clone()))
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Print, operand: IrInstructionValue::new()});
@@ -194,16 +197,16 @@ impl LoispInstruction {
             Plus => {
                 self.push_parameters(ir, context)?;
                 if self.parameters.len() < 2 {
-                    return Err(NotEnoughParameters(self.token.clone()))
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()))
                 }
 
                 if self.parameters.len() > 2 {
-                    return Err(TooMuchParameters(self.token.clone()))
+                    return Err(LoispError::TooMuchParameters(self.token.clone()))
                 }
 
                 if !(self.parameters[0].datatype().unwrap() == LoispDatatype::Integer
                      && self.parameters[1].datatype().unwrap() == LoispDatatype::Integer) {
-                    return Err(MismatchedTypes(self.token.clone()))
+                    return Err(LoispError::MismatchedTypes(self.token.clone()))
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Plus, operand: IrInstructionValue::new()});
@@ -211,16 +214,16 @@ impl LoispInstruction {
             Minus => {
                 self.push_parameters(ir, context)?;
                 if self.parameters.len() < 2 {
-                    return Err(NotEnoughParameters(self.token.clone()))
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()))
                 }
 
                 if self.parameters.len() > 2 {
-                    return Err(TooMuchParameters(self.token.clone()))
+                    return Err(LoispError::TooMuchParameters(self.token.clone()))
                 }
 
                 if !(self.parameters[0].datatype().unwrap() == LoispDatatype::Integer
                      && self.parameters[1].datatype().unwrap() == LoispDatatype::Integer) {
-                    return Err(MismatchedTypes(self.token.clone()))
+                    return Err(LoispError::MismatchedTypes(self.token.clone()))
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Minus, operand: IrInstructionValue::new()});
@@ -228,16 +231,16 @@ impl LoispInstruction {
             Multiplication => {
                 self.push_parameters(ir, context)?;
                 if self.parameters.len() < 2 {
-                    return Err(NotEnoughParameters(self.token.clone()))
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()))
                 }
 
                 if self.parameters.len() > 2 {
-                    return Err(TooMuchParameters(self.token.clone()))
+                    return Err(LoispError::TooMuchParameters(self.token.clone()))
                 }
 
                 if !(self.parameters[0].datatype().unwrap() == LoispDatatype::Integer
                      && self.parameters[1].datatype().unwrap() == LoispDatatype::Integer) {
-                    return Err(MismatchedTypes(self.token.clone()))
+                    return Err(LoispError::MismatchedTypes(self.token.clone()))
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Multiplication, operand: IrInstructionValue::new()});
@@ -245,16 +248,16 @@ impl LoispInstruction {
             Division => {
                 self.push_parameters(ir, context)?;
                 if self.parameters.len() < 2 {
-                    return Err(NotEnoughParameters(self.token.clone()))
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()))
                 }
 
                 if self.parameters.len() > 2 {
-                    return Err(TooMuchParameters(self.token.clone()))
+                    return Err(LoispError::TooMuchParameters(self.token.clone()))
                 }
 
                 if !(self.parameters[0].datatype().unwrap() == LoispDatatype::Integer
                      && self.parameters[1].datatype().unwrap() == LoispDatatype::Integer) {
-                    return Err(MismatchedTypes(self.token.clone()))
+                    return Err(LoispError::MismatchedTypes(self.token.clone()))
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Division, operand: IrInstructionValue::new()});
@@ -262,16 +265,16 @@ impl LoispInstruction {
             Mod => {
                 self.push_parameters(ir, context)?;
                 if self.parameters.len() < 2 {
-                    return Err(NotEnoughParameters(self.token.clone()))
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()))
                 }
 
                 if self.parameters.len() > 2 {
-                    return Err(TooMuchParameters(self.token.clone()))
+                    return Err(LoispError::TooMuchParameters(self.token.clone()))
                 }
 
                 if !(self.parameters[0].datatype().unwrap() == LoispDatatype::Integer
                      && self.parameters[1].datatype().unwrap() == LoispDatatype::Integer) {
-                    return Err(MismatchedTypes(self.token.clone()))
+                    return Err(LoispError::MismatchedTypes(self.token.clone()))
                 }
 
                 ir.push(IrInstruction {kind: IrInstructionKind::Mod, operand: IrInstructionValue::new()});
@@ -279,16 +282,16 @@ impl LoispInstruction {
             Syscall => {
                 self.push_parameters(ir, context)?;
                 if self.parameters.len() > 6 {
-                    return Err(TooMuchParameters(self.token.clone()))
+                    return Err(LoispError::TooMuchParameters(self.token.clone()))
                 }
 
                 if self.parameters.len() < 2 {
-                    return Err(NotEnoughParameters(self.token.clone()))
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()))
                 }
 
                 for v in &self.parameters {
                     if v.datatype().unwrap() != LoispDatatype::Integer {
-                        return Err(MismatchedTypes(self.token.clone()))
+                        return Err(LoispError::MismatchedTypes(self.token.clone()))
                     }
                 }
 
@@ -296,24 +299,35 @@ impl LoispInstruction {
             }
             SetVar => {
                 if self.parameters.len() < 2 {
-                    return Err(NotEnoughParameters(self.token.clone()))
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()))
                 }
 
                 if self.parameters.len() > 2 {
-                    return Err(TooMuchParameters(self.token.clone()))
+                    return Err(LoispError::TooMuchParameters(self.token.clone()))
                 }
 
                 if self.parameters[0].datatype().unwrap() != LoispDatatype::Word {
-                    return Err(MismatchedTypes(self.token.clone()))
+                    return Err(LoispError::MismatchedTypes(self.token.clone()))
+                }
+
+                if self.parameters[1].datatype().unwrap() == LoispDatatype::Word {
+                    return Err(LoispError::ParserError(ParserError::InvalidSyntax(self.token.clone())))
                 }
 
                 let variable = LoispVariable {
                     id: context.variables.len(),
                     value: self.parameters[1].clone()
                 };
-                context.variables.insert(self.parameters[0].clone().word.unwrap(), variable);
-                println!("{:?}", context);
-                todo!("Compile variables")
+                context.variables.insert(self.parameters[0].clone().word.unwrap(), variable.clone());
+                ir.push(IrInstruction {kind: IrInstructionKind::AllocMemory, operand: IrInstructionValue::new().integer(variable.clone().value.size() as i64)});
+                match variable.clone().value.datatype() {
+                    Some(LoispDatatype::Integer) => ir.push(IrInstruction {kind: IrInstructionKind::PushInteger, operand: IrInstructionValue::new().integer(variable.value.integer.unwrap())}),
+                    Some(LoispDatatype::Word) => return Err(LoispError::ParserError(ParserError::InvalidSyntax(variable.value.token.clone()))),
+                    Some(LoispDatatype::String) => todo!("push strings"),
+                    _ => panic!("unreachable")
+                }
+                ir.push(IrInstruction {kind: IrInstructionKind::PushMemory, operand: IrInstructionValue::new().integer(variable.clone().id as i64)});
+                value_size_as_store_instruction(variable.clone().value.datatype().unwrap().size(), ir);
             }
             Nop => {}
         }

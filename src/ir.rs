@@ -8,6 +8,16 @@ use super::print_info;
 use std::fs;
 use std::io::*;
 
+pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram) {
+    match s {
+        1 => ir.push(IrInstruction {kind: IrInstructionKind::Store8, operand: IrInstructionValue::new()}),
+        2 => ir.push(IrInstruction {kind: IrInstructionKind::Store16, operand: IrInstructionValue::new()}),
+        4 => ir.push(IrInstruction {kind: IrInstructionKind::Store32, operand: IrInstructionValue::new()}),
+        8 => ir.push(IrInstruction {kind: IrInstructionKind::Store64, operand: IrInstructionValue::new()}),
+        _ => panic!("unreachable")
+    }
+}
+
 pub fn syscall_number_as_register(n: i64) -> String {
     match n {
         0 => "rax".to_string(),
@@ -22,6 +32,7 @@ pub fn syscall_number_as_register(n: i64) -> String {
 
 #[derive(Debug)]
 pub enum IrInstructionKind {
+    Print,
     PushInteger,
     Plus,
     Minus,
@@ -29,7 +40,16 @@ pub enum IrInstructionKind {
     Division,
     Mod,
     Syscall,
-    Print
+    AllocMemory,
+    Load8,
+    Store8,
+    Load16,
+    Store16,
+    Load32,
+    Store32,
+    Load64,
+    Store64,
+    PushMemory
 }
 
 #[derive(Clone)]
@@ -53,13 +73,30 @@ impl IrInstructionValue {
     }
 }
 
+pub struct IrMemory {
+    pub ident: usize,
+    pub alloc: usize
+}
+
+pub struct IrContext {
+    pub memories: Vec<IrMemory>
+}
+
+impl IrContext {
+    pub fn new() -> IrContext {
+        IrContext {
+            memories: vec![]
+        }
+    }
+}
+
 pub struct IrInstruction {
     pub kind: IrInstructionKind,
     pub operand: IrInstructionValue
 }
 
 impl IrInstruction {
-    pub fn to_intel_linux_x86_64_assembly(&self, f: &mut fs::File) -> Result<()> {
+    pub fn to_intel_linux_x86_64_assembly(&self, f: &mut fs::File, context: &mut IrContext) -> Result<()> {
         use IrInstructionKind::*;
 
         match self.kind {
@@ -109,6 +146,65 @@ impl IrInstruction {
                 writeln!(f, "syscall")?;
                 writeln!(f, "push rax")?;
             }
+            AllocMemory => {
+                let memory = IrMemory {
+                    ident: context.memories.len(),
+                    alloc: self.operand.integer as usize
+                };
+                context.memories.push(memory);
+            }
+            Load8 => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "xor rbx, rbx")?;
+                writeln!(f, "mov bl, [rax]")?;
+                writeln!(f, "push rbx")?;
+            }
+            Store8 => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "mov [rax], bl")?;
+            }
+            Load16 => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "xor rbx, rbx")?;
+                writeln!(f, "mov bx, [rax]")?;
+                writeln!(f, "push rbx")?;
+            }
+            Store16 => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "mov [rax], bx")?;
+            }
+            Load32 => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "xor rbx, rbx")?;
+                writeln!(f, "mov ebx, [rax]")?;
+                writeln!(f, "push rbx")?;
+            }
+            Store32 => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "mov [rax], ebx")?;
+            }
+            Load64 => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "xor rbx, rbx")?;
+                writeln!(f, "mov rbx, [rax]")?;
+                writeln!(f, "push rbx")?;
+            }
+            Store64 => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "mov [rax], rbx")?;
+            }
+            PushMemory => {
+                for m in &context.memories {
+                    if m.ident == (self.operand.integer as usize) {
+                        writeln!(f, "push mem_{}", self.operand.integer)?;
+                        break;
+                    }
+                }
+            }
         }
 
         Ok(())
@@ -130,7 +226,7 @@ impl IrProgram {
         self.instructions.push(i)
     }
 
-    pub fn to_fasm_linux_x86_64_assembly(&self, output: String, config: Config) -> Result<()> {
+    pub fn to_fasm_linux_x86_64_assembly(&self, output: String, config: Config, context: &mut IrContext) -> Result<()> {
         if !config.silent {
             print_info!("INFO", "Generating `{}`", output);
         }
@@ -181,12 +277,17 @@ impl IrProgram {
 
         for i in &self.instructions {
             writeln!(f, ";; -- {:?} --", i.kind)?;
-            i.to_intel_linux_x86_64_assembly(&mut f)?;
+            i.to_intel_linux_x86_64_assembly(&mut f, context)?;
         }
 
         writeln!(f, "mov rax, 60")?;
         writeln!(f, "mov rdi, 0")?;
         writeln!(f, "syscall")?;
+        writeln!(f, "segment readable writable")?;
+
+        for m in &context.memories {
+            writeln!(f, "mem_{}: rb {}", m.ident, m.alloc)?;
+        }
 
         Ok(())
     }
@@ -217,8 +318,9 @@ pub fn compile_file_into_ir(f: String) -> Result<IrProgram> {
 }
 
 pub fn compile_file_into_assembly(i: &str, o: &str, config: Config) -> Result<()> {
+    let mut context = IrContext::new();
     let ir = compile_file_into_ir(i.to_string())?;
-    ir.to_fasm_linux_x86_64_assembly(o.to_string(), config.clone())?;
+    ir.to_fasm_linux_x86_64_assembly(o.to_string(), config.clone(), &mut context)?;
     Ok(())
 }
 
