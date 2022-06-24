@@ -15,7 +15,8 @@ pub enum LoispError {
     ParserError(ParserError),
     StandardError(io::Error),
     VariableNotFound(LexerToken),
-    VariableRedefinition(LexerToken)
+    VariableRedefinition(LexerToken),
+    CantAcceptNothing(LexerToken)
 }
 
 impl fmt::Display for LoispError {
@@ -27,7 +28,8 @@ impl fmt::Display for LoispError {
             Self::ParserError(error) => write!(f, "{}", error)?,
             Self::StandardError(error) => write!(f, "ERROR: {:?}", error)?,
             Self::VariableNotFound(token) => write!(f, "{}: ERROR: Variable not found: `{}`", token.location, token.value.string)?,
-            Self::VariableRedefinition(token) => write!(f, "{}: ERROR: Variable redefinition: `{}`", token.location, token.value.string)?
+            Self::VariableRedefinition(token) => write!(f, "{}: ERROR: Variable redefinition: `{}`", token.location, token.value.string)?,
+            Self::CantAcceptNothing(token) => write!(f, "{}: ERROR: Can't accept value of type `Nothing` as parameter", token.location)?
         }
         Ok(())
     }
@@ -167,13 +169,17 @@ impl LoispInstruction {
     pub fn push_parameters(&self, ir: &mut IrProgram, context: &mut LoispContext) -> Result<(), LoispError> {
         for p in self.parameters.iter().rev() {
             if p.is_instruction_return() {
+                if p.instruction_return.return_type(context) == LoispDatatype::Nothing {
+                    return Err(LoispError::CantAcceptNothing(p.token.clone()));
+                }
                 p.instruction_return.to_ir(ir, context)?;
             } else {
                 match p.datatype(context) {
                     Some(LoispDatatype::Integer) => ir.push(IrInstruction {kind: IrInstructionKind::PushInteger, operand: IrInstructionValue::new().integer(p.integer.unwrap())}),
                     Some(LoispDatatype::Word) => return Err(LoispError::ParserError(ParserError::InvalidSyntax(p.token.clone()))),
                     Some(LoispDatatype::String) => todo!("push strings"),
-                    _ => panic!("unreachable")
+                    Some(LoispDatatype::Nothing) => return Err(LoispError::CantAcceptNothing(p.token.clone())),
+                    None => panic!("unreachable")
                 }
             }
         }
