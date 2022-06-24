@@ -58,6 +58,7 @@ pub enum LoispInstructionType {
     Syscall,
     SetVar,
     GetVar,
+    ChVar,
     Nop
 }
 
@@ -162,6 +163,7 @@ impl LoispInstruction {
                     return var.unwrap().value.clone().datatype(context).unwrap()
                 }
             }
+            LoispInstructionType::ChVar          => Nothing
         }
     }
 
@@ -371,6 +373,43 @@ impl LoispInstruction {
                 } else {
                     return Err(LoispError::VariableNotFound(self.parameters[0].token.clone()))
                 }
+            }
+            ChVar => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()))
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()))
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()))
+                }
+
+                if let Some(var) = context.variables.get(self.parameters[0].word.as_ref().unwrap()) {
+                    let parameter1 = self.parameters[1].clone();
+                    let variable_value = var.value.clone();
+                    if parameter1.datatype(context).unwrap() != variable_value.datatype(context).unwrap() {
+                        return Err(LoispError::MismatchedTypes(self.token.clone()))
+                    }
+                } else {
+                    return Err(LoispError::VariableNotFound(self.parameters[0].token.clone()))
+                }
+
+                let mutable_var = context.variables.get_mut(self.parameters[0].word.as_ref().unwrap()).unwrap();
+                let var = mutable_var.clone();
+                mutable_var.value = self.parameters[1].clone();
+
+                {
+                    let mut inst = LoispInstruction::new(self.token.clone());
+                    let last: Vec<LoispValue> = vec![self.parameters.clone().last().unwrap().clone()];
+                    inst.parameters = last;
+                    inst.push_parameters(ir, context)?;
+                }
+
+                ir.push(IrInstruction {kind: IrInstructionKind::PushMemory, operand: IrInstructionValue::new().integer(var.id as i64)});
+                value_size_as_store_instruction(var.clone().value.datatype(context).unwrap().size(), ir);
             }
             Nop => {}
         }
