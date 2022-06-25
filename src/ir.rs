@@ -59,7 +59,9 @@ pub enum IrInstructionKind {
     Store32,
     Load64,
     Store64,
-    PushMemory
+    PushMemory,
+    Label,
+    Jump
 }
 
 #[derive(Clone)]
@@ -89,13 +91,15 @@ pub struct IrMemory {
 }
 
 pub struct IrContext {
-    pub memories: Vec<IrMemory>
+    pub memories: Vec<IrMemory>,
+    pub label_count: i64
 }
 
 impl IrContext {
     pub fn new() -> IrContext {
         IrContext {
-            memories: vec![]
+            memories: vec![],
+            label_count: 0
         }
     }
 }
@@ -214,6 +218,15 @@ impl IrInstruction {
                         break;
                     }
                 }
+            }
+            Label => {
+                writeln!(f, "addr_{}:", context.label_count)?;
+                context.label_count += 1;
+            }
+            Jump => {
+                assert!(self.operand.integer <= context.label_count,
+                        "Label does not exist");
+                writeln!(f, "jmp addr_{}", self.operand.integer)?;
             }
         }
 
