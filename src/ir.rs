@@ -1,8 +1,8 @@
-use super::instructions::*;
-use super::parser::*;
-use super::lexer::*;
 use super::common::*;
 use super::config::*;
+use super::instructions::*;
+use super::lexer::*;
+use super::parser::*;
 use super::print_info;
 
 use std::fs;
@@ -10,21 +10,45 @@ use std::io::*;
 
 pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram) {
     match s {
-        1 => ir.push(IrInstruction {kind: IrInstructionKind::Store8, operand: IrInstructionValue::new()}),
-        2 => ir.push(IrInstruction {kind: IrInstructionKind::Store16, operand: IrInstructionValue::new()}),
-        4 => ir.push(IrInstruction {kind: IrInstructionKind::Store32, operand: IrInstructionValue::new()}),
-        8 => ir.push(IrInstruction {kind: IrInstructionKind::Store64, operand: IrInstructionValue::new()}),
-        _ => panic!("unreachable")
+        1 => ir.push(IrInstruction {
+            kind: IrInstructionKind::Store8,
+            operand: IrInstructionValue::new(),
+        }),
+        2 => ir.push(IrInstruction {
+            kind: IrInstructionKind::Store16,
+            operand: IrInstructionValue::new(),
+        }),
+        4 => ir.push(IrInstruction {
+            kind: IrInstructionKind::Store32,
+            operand: IrInstructionValue::new(),
+        }),
+        8 => ir.push(IrInstruction {
+            kind: IrInstructionKind::Store64,
+            operand: IrInstructionValue::new(),
+        }),
+        _ => panic!("unreachable"),
     }
 }
 
 pub fn value_size_as_load_instruction(s: usize, ir: &mut IrProgram) {
     match s {
-        1 => ir.push(IrInstruction {kind: IrInstructionKind::Load8, operand: IrInstructionValue::new()}),
-        2 => ir.push(IrInstruction {kind: IrInstructionKind::Load16, operand: IrInstructionValue::new()}),
-        4 => ir.push(IrInstruction {kind: IrInstructionKind::Load32, operand: IrInstructionValue::new()}),
-        8 => ir.push(IrInstruction {kind: IrInstructionKind::Load64, operand: IrInstructionValue::new()}),
-        _ => panic!("unreachable")
+        1 => ir.push(IrInstruction {
+            kind: IrInstructionKind::Load8,
+            operand: IrInstructionValue::new(),
+        }),
+        2 => ir.push(IrInstruction {
+            kind: IrInstructionKind::Load16,
+            operand: IrInstructionValue::new(),
+        }),
+        4 => ir.push(IrInstruction {
+            kind: IrInstructionKind::Load32,
+            operand: IrInstructionValue::new(),
+        }),
+        8 => ir.push(IrInstruction {
+            kind: IrInstructionKind::Load64,
+            operand: IrInstructionValue::new(),
+        }),
+        _ => panic!("unreachable"),
     }
 }
 
@@ -36,7 +60,7 @@ pub fn syscall_number_as_register(n: i64) -> String {
         3 => "r10".to_string(),
         4 => "r8".to_string(),
         5 => "r9".to_string(),
-        _ => "invalid".to_string()
+        _ => "invalid".to_string(),
     }
 }
 
@@ -61,21 +85,21 @@ pub enum IrInstructionKind {
     Store64,
     PushMemory,
     Label,
-    Jump
+    Jump,
 }
 
 #[derive(Clone)]
 #[allow(dead_code)]
 pub struct IrInstructionValue {
     string: String,
-    integer: i64
+    integer: i64,
 }
 
 impl IrInstructionValue {
     pub fn new() -> IrInstructionValue {
         IrInstructionValue {
             string: String::new(),
-            integer: 0
+            integer: 0,
         }
     }
 
@@ -87,30 +111,34 @@ impl IrInstructionValue {
 
 pub struct IrMemory {
     pub ident: usize,
-    pub alloc: usize
+    pub alloc: usize,
 }
 
 pub struct IrContext {
     pub memories: Vec<IrMemory>,
-    pub label_count: i64
+    pub label_count: i64,
 }
 
 impl IrContext {
     pub fn new() -> IrContext {
         IrContext {
             memories: vec![],
-            label_count: 0
+            label_count: 0,
         }
     }
 }
 
 pub struct IrInstruction {
     pub kind: IrInstructionKind,
-    pub operand: IrInstructionValue
+    pub operand: IrInstructionValue,
 }
 
 impl IrInstruction {
-    pub fn to_intel_linux_x86_64_assembly(&self, f: &mut fs::File, context: &mut IrContext) -> Result<()> {
+    pub fn to_intel_linux_x86_64_assembly(
+        &self,
+        f: &mut fs::File,
+        context: &mut IrContext,
+    ) -> Result<()> {
         use IrInstructionKind::*;
 
         match self.kind {
@@ -163,7 +191,7 @@ impl IrInstruction {
             AllocMemory => {
                 let memory = IrMemory {
                     ident: context.memories.len(),
-                    alloc: self.operand.integer as usize
+                    alloc: self.operand.integer as usize,
                 };
                 context.memories.push(memory);
             }
@@ -224,8 +252,10 @@ impl IrInstruction {
                 context.label_count += 1;
             }
             Jump => {
-                assert!(self.operand.integer <= context.label_count,
-                        "Label does not exist");
+                assert!(
+                    self.operand.integer <= context.label_count,
+                    "Label does not exist"
+                );
                 writeln!(f, "jmp addr_{}", self.operand.integer)?;
             }
         }
@@ -235,13 +265,13 @@ impl IrInstruction {
 }
 
 pub struct IrProgram {
-    pub instructions: Vec<IrInstruction>
+    pub instructions: Vec<IrInstruction>,
 }
 
 impl IrProgram {
     pub fn new() -> IrProgram {
         IrProgram {
-            instructions: vec![]
+            instructions: vec![],
         }
     }
 
@@ -249,7 +279,12 @@ impl IrProgram {
         self.instructions.push(i)
     }
 
-    pub fn to_fasm_linux_x86_64_assembly(&self, output: String, config: Config, context: &mut IrContext) -> Result<()> {
+    pub fn to_fasm_linux_x86_64_assembly(
+        &self,
+        output: String,
+        config: Config,
+        context: &mut IrContext,
+    ) -> Result<()> {
         if !config.silent {
             print_info!("INFO", "Generating `{}`", output);
         }
@@ -360,14 +395,15 @@ pub fn compile_file_into_executable(config: Config) -> Result<()> {
     let output_assembly = format!("{}.asm", config_output);
     let output_executable = format!("{}.tmp", config_output);
 
-    compile_file_into_assembly(config.input.as_str(), output_assembly.as_str(), config.clone())?;
+    compile_file_into_assembly(
+        config.input.as_str(),
+        output_assembly.as_str(),
+        config.clone(),
+    )?;
 
-    let assembler_command =
-        format!("fasm -m 524288 {} {}", output_assembly, output_executable);
-    let chmod_command =
-        format!("chmod +x {}", output_executable);
-    let rename_command =
-        format!("mv {} {}", output_executable, config_output);
+    let assembler_command = format!("fasm -m 524288 {} {}", output_assembly, output_executable);
+    let chmod_command = format!("chmod +x {}", output_executable);
+    let rename_command = format!("mv {} {}", output_executable, config_output);
 
     run_command_with_info(assembler_command, config.clone())?;
     run_command_with_info(chmod_command, config.clone())?;

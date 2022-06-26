@@ -3,7 +3,7 @@ pub enum LoispDatatype {
     Integer,
     String,
     Word,
-    Nothing
+    Nothing,
 }
 
 impl LoispDatatype {
@@ -12,7 +12,7 @@ impl LoispDatatype {
             Self::Integer => 8,
             Self::String => 8,
             Self::Word => 0,
-            Self::Nothing => 0
+            Self::Nothing => 0,
         }
     }
 }

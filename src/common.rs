@@ -1,8 +1,8 @@
 use super::config::*;
 
-use std::process::{Command, Stdio};
-use std::io;
 use std::env;
+use std::io;
+use std::process::{Command, Stdio};
 
 #[macro_export]
 macro_rules! print_info {
@@ -40,6 +40,8 @@ pub fn run_command_with_info(cmd: String, config: Config) -> io::Result<()> {
     }
     shell_cmd.stderr(Stdio::inherit());
 
-    shell_cmd.status().expect(format!("Command {} failed to execute", cmd).as_str());
+    shell_cmd
+        .status()
+        .expect(format!("Command {} failed to execute", cmd).as_str());
     Ok(())
 }

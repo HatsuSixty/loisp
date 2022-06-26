@@ -1,9 +1,9 @@
-use super::lexer_type;
-use super::lexer::*;
 use super::instructions::*;
+use super::lexer::*;
+use super::lexer_type;
 
-use std::iter::Peekable;
 use std::fmt;
+use std::iter::Peekable;
 
 #[derive(Debug)]
 pub enum ParserError {
@@ -11,17 +11,29 @@ pub enum ParserError {
     UnmatchedParenthesis(LexerToken),
     ReachedEOF(LexerToken),
     ExpectedNameToBeWord(LexerToken),
-    UnknownInstruction(LexerToken)
+    UnknownInstruction(LexerToken),
 }
 
 impl fmt::Display for ParserError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
             Self::InvalidSyntax(token) => write!(f, "{}: ERROR: Invalid syntax", token.location)?,
-            Self::UnmatchedParenthesis(token) => write!(f, "{}: ERROR: Unmatched parenthesis", token.location)?,
-            Self::ExpectedNameToBeWord(token) => write!(f, "{}: ERROR: Expected word but got `{}`", token.location, token.value.string)?,
-            Self::ReachedEOF(token) => write!(f, "{}: ERROR: Reached EOF while parsing", token.location)?,
-            Self::UnknownInstruction(token) => write!(f, "{}: ERROR: Unknown instruction: {}", token.location, token.value.string)?
+            Self::UnmatchedParenthesis(token) => {
+                write!(f, "{}: ERROR: Unmatched parenthesis", token.location)?
+            }
+            Self::ExpectedNameToBeWord(token) => write!(
+                f,
+                "{}: ERROR: Expected word but got `{}`",
+                token.location, token.value.string
+            )?,
+            Self::ReachedEOF(token) => {
+                write!(f, "{}: ERROR: Reached EOF while parsing", token.location)?
+            }
+            Self::UnknownInstruction(token) => write!(
+                f,
+                "{}: ERROR: Unknown instruction: {}",
+                token.location, token.value.string
+            )?,
         }
         Ok(())
     }
@@ -41,12 +53,22 @@ pub fn token_to_instruction_kind(token: LexerToken) -> Result<LoispInstructionTy
         "chvar" => Ok(LoispInstructionType::ChVar),
         "loop" => Ok(LoispInstructionType::Loop),
         "break" => Ok(LoispInstructionType::Break),
-        _ => Err(ParserError::UnknownInstruction(token.clone()))
+        _ => Err(ParserError::UnknownInstruction(token.clone())),
     }
 }
 
-pub fn parse_instruction(lexer: &mut lexer_type!(), token: LexerToken) -> Result<LoispInstruction, ParserError> {
-    let mut instruction = LoispInstruction::new(LexerToken {kind: LexerTokenKind::Word, value: LexerTokenValue {string: String::new(), integer: 0}, location: LexerLocation::new(String::new())});
+pub fn parse_instruction(
+    lexer: &mut lexer_type!(),
+    token: LexerToken,
+) -> Result<LoispInstruction, ParserError> {
+    let mut instruction = LoispInstruction::new(LexerToken {
+        kind: LexerTokenKind::Word,
+        value: LexerTokenValue {
+            string: String::new(),
+            integer: 0,
+        },
+        location: LexerLocation::new(String::new()),
+    });
     if let Some(x) = lexer.peek() {
         instruction.token = x.clone();
     } else {
@@ -55,7 +77,7 @@ pub fn parse_instruction(lexer: &mut lexer_type!(), token: LexerToken) -> Result
 
     if let Some(name) = lexer.next() {
         if name.kind != LexerTokenKind::Word {
-            return Err(ParserError::ExpectedNameToBeWord(name.clone()))
+            return Err(ParserError::ExpectedNameToBeWord(name.clone()));
         }
 
         instruction.kind = token_to_instruction_kind(name.clone())?;
@@ -90,16 +112,18 @@ pub fn parse_instruction(lexer: &mut lexer_type!(), token: LexerToken) -> Result
         }
 
         if !closed {
-            return Err(ParserError::UnmatchedParenthesis(location.clone()))
+            return Err(ParserError::UnmatchedParenthesis(location.clone()));
         }
     } else {
-        return Err(ParserError::ReachedEOF(token))
+        return Err(ParserError::ReachedEOF(token));
     }
 
     Ok(instruction)
 }
 
-pub fn construct_instructions_from_tokens(lexer: &mut lexer_type!()) -> Result<Vec<LoispInstruction>, ParserError> {
+pub fn construct_instructions_from_tokens(
+    lexer: &mut lexer_type!(),
+) -> Result<Vec<LoispInstruction>, ParserError> {
     use LexerTokenKind::*;
 
     let mut instructions: Vec<LoispInstruction> = vec![];
@@ -111,7 +135,7 @@ pub fn construct_instructions_from_tokens(lexer: &mut lexer_type!()) -> Result<V
             }
             CloseParen => return Err(ParserError::UnmatchedParenthesis(x.clone())),
             Word => return Err(ParserError::InvalidSyntax(x.clone())),
-            Integer => return Err(ParserError::InvalidSyntax(x.clone()))
+            Integer => return Err(ParserError::InvalidSyntax(x.clone())),
         }
     }
     Ok(instructions)

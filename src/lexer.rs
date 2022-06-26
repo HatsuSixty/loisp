@@ -1,32 +1,32 @@
-use std::iter::Peekable;
 use std::fmt;
+use std::iter::Peekable;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum LexerTokenKind {
     OpenParen,
     CloseParen,
     Word,
-    Integer
+    Integer,
 }
 
 #[derive(Debug, Clone)]
 pub struct LexerTokenValue {
     pub integer: i64,
-    pub string: String
+    pub string: String,
 }
 
 impl LexerTokenValue {
     pub fn from_string(s: String) -> LexerTokenValue {
         LexerTokenValue {
             integer: 0,
-            string: s
+            string: s,
         }
     }
 
     pub fn from_int(i: i64) -> LexerTokenValue {
         LexerTokenValue {
             integer: i,
-            string: "".to_string()
+            string: "".to_string(),
         }
     }
 }
@@ -35,7 +35,7 @@ impl LexerTokenValue {
 pub struct LexerLocation {
     pub f: String,
     pub r: i64,
-    pub c: i64
+    pub c: i64,
 }
 
 impl fmt::Display for LexerLocation {
@@ -47,11 +47,7 @@ impl fmt::Display for LexerLocation {
 
 impl LexerLocation {
     pub fn new(f: String) -> LexerLocation {
-        LexerLocation {
-            f: f,
-            r: 1,
-            c: 0
-        }
+        LexerLocation { f: f, r: 1, c: 0 }
     }
 }
 
@@ -59,19 +55,19 @@ impl LexerLocation {
 pub struct LexerToken {
     pub kind: LexerTokenKind,
     pub value: LexerTokenValue,
-    pub location: LexerLocation
+    pub location: LexerLocation,
 }
 
-pub struct Lexer<Chars: Iterator<Item=char>> {
+pub struct Lexer<Chars: Iterator<Item = char>> {
     pub chars: Peekable<Chars>,
-    pub location: LexerLocation
+    pub location: LexerLocation,
 }
 
-impl<Chars: Iterator<Item=char>> Lexer<Chars> {
+impl<Chars: Iterator<Item = char>> Lexer<Chars> {
     pub fn from_chars(chars: Chars, f: String) -> Self {
         Self {
             chars: chars.peekable(),
-            location: LexerLocation::new(f)
+            location: LexerLocation::new(f),
         }
     }
 
@@ -84,7 +80,7 @@ impl<Chars: Iterator<Item=char>> Lexer<Chars> {
     }
 }
 
-impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
+impl<Chars: Iterator<Item = char>> Iterator for Lexer<Chars> {
     type Item = LexerToken;
 
     fn next(&mut self) -> Option<LexerToken> {
@@ -98,9 +94,17 @@ impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
             text.push(x);
             self.advance_location(x);
             match x {
-                '(' => Some(LexerToken {kind: OpenParen, value: LexerTokenValue::from_string(text), location: self.location.clone()}),
-                ')' => Some(LexerToken {kind: CloseParen, value: LexerTokenValue::from_string(text), location: self.location.clone()}),
-                _   => {
+                '(' => Some(LexerToken {
+                    kind: OpenParen,
+                    value: LexerTokenValue::from_string(text),
+                    location: self.location.clone(),
+                }),
+                ')' => Some(LexerToken {
+                    kind: CloseParen,
+                    value: LexerTokenValue::from_string(text),
+                    location: self.location.clone(),
+                }),
+                _ => {
                     while let Some(x) = self.chars.next_if(|x| x.is_alphanumeric()) {
                         text.push(x);
                         self.advance_location(x);
@@ -110,9 +114,17 @@ impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
                     let mut location = self.location.clone();
                     location.c -= (text.len() as i64) - 1;
                     if let Err(_) = parsed {
-                        Some(LexerToken {kind: Word, value: LexerTokenValue::from_string(text), location: location.clone()})
+                        Some(LexerToken {
+                            kind: Word,
+                            value: LexerTokenValue::from_string(text),
+                            location: location.clone(),
+                        })
                     } else {
-                        Some(LexerToken {kind: Integer, value: LexerTokenValue::from_int(parsed.unwrap()), location: location.clone()})
+                        Some(LexerToken {
+                            kind: Integer,
+                            value: LexerTokenValue::from_int(parsed.unwrap()),
+                            location: location.clone(),
+                        })
                     }
                 }
             }

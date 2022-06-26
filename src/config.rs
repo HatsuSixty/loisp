@@ -1,14 +1,14 @@
 #[derive(Clone)]
 pub struct ConfigRun {
     pub run: bool,
-    pub args: Vec<String>
+    pub args: Vec<String>,
 }
 
 impl ConfigRun {
     pub fn new() -> ConfigRun {
         ConfigRun {
             run: false,
-            args: vec![]
+            args: vec![],
         }
     }
 }
@@ -19,7 +19,7 @@ pub struct Config {
     pub run: ConfigRun,
     pub piped: bool,
     pub input: String,
-    pub output: Option<String>
+    pub output: Option<String>,
 }
 
 impl Config {
@@ -29,7 +29,7 @@ impl Config {
             run: ConfigRun::new(),
             piped: false,
             input: String::new(),
-            output: None
+            output: None,
         }
     }
 }

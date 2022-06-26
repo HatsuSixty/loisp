@@ -1,21 +1,20 @@
+mod common;
+mod config;
 mod instructions;
-mod types;
 mod ir;
 mod lexer;
 mod parser;
-mod common;
-mod config;
+mod types;
 
+use config::*;
 use instructions::*;
 use ir::*;
-use config::*;
 
 use std::env;
 use std::ffi::OsString;
 
 fn usage(stderr: bool) {
-    let help =
-        "Usage: loisp [FLAGS] <SUBCOMMAND>
+    let help = "Usage: loisp [FLAGS] <SUBCOMMAND>
     Subcommands:
         build <file>   Compile <file> into an executable
         run   <file>   Compile <file> into an executable and run the generated executable
@@ -66,7 +65,7 @@ fn main() -> Result<(), LoispError> {
                         eprintln!("ERROR: No input file was provided");
                         std::process::exit(1)
                     }
-                    break
+                    break;
                 }
                 "run" => {
                     if let Some(i) = shift(&mut args) {
@@ -80,7 +79,7 @@ fn main() -> Result<(), LoispError> {
                     while let Some(flag) = shift(&mut args) {
                         run_flags.push(flag);
                     }
-                    break
+                    break;
                 }
                 "help" => {
                     usage(false);
