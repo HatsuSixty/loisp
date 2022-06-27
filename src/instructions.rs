@@ -455,13 +455,7 @@ impl LoispInstruction {
                         .integer(variable.clone().value.size(context) as i64),
                 });
 
-                {
-                    let mut inst = LoispInstruction::new(self.token.clone());
-                    let last: Vec<LoispValue> =
-                        vec![self.parameters.clone().last().unwrap().clone()];
-                    inst.parameters = last;
-                    inst.push_parameters(ir, context, false)?;
-                }
+                push_value(self.parameters.clone().last().unwrap().clone(), ir, context)?;
 
                 ir.push(IrInstruction {
                     kind: IrInstructionKind::PushMemory,
@@ -537,13 +531,7 @@ impl LoispInstruction {
                 let var = mutable_var.clone();
                 mutable_var.value = self.parameters[1].clone();
 
-                {
-                    let mut inst = LoispInstruction::new(self.token.clone());
-                    let last: Vec<LoispValue> =
-                        vec![self.parameters.clone().last().unwrap().clone()];
-                    inst.parameters = last;
-                    inst.push_parameters(ir, context, false)?;
-                }
+                push_value(self.parameters.clone().last().unwrap().clone(), ir, context)?;
 
                 ir.push(IrInstruction {
                     kind: IrInstructionKind::PushMemory,
