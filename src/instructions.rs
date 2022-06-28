@@ -172,6 +172,11 @@ impl LoispContext {
     }
 }
 
+pub fn ir_push(inst: IrInstruction, ir: &mut IrProgram, context: &mut LoispContext) {
+    context.label_count += 1;
+    ir.push(inst);
+}
+
 pub fn push_value(
     p: LoispValue,
     ir: &mut IrProgram,
@@ -181,10 +186,14 @@ pub fn push_value(
         p.instruction_return.to_ir(ir, context)?;
     } else {
         match p.datatype(context) {
-            Some(LoispDatatype::Integer) => ir.push(IrInstruction {
-                kind: IrInstructionKind::PushInteger,
-                operand: IrInstructionValue::new().integer(p.integer.unwrap()),
-            }),
+            Some(LoispDatatype::Integer) => ir_push(
+                IrInstruction {
+                    kind: IrInstructionKind::PushInteger,
+                    operand: IrInstructionValue::new().integer(p.integer.unwrap()),
+                },
+                ir,
+                context,
+            ),
             Some(LoispDatatype::Word) => {
                 return Err(LoispError::ParserError(ParserError::InvalidSyntax(
                     p.token.clone(),
@@ -282,10 +291,14 @@ impl LoispInstruction {
                     return Err(LoispError::MismatchedTypes(self.token.clone()));
                 }
 
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Print,
-                    operand: IrInstructionValue::new(),
-                });
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Print,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
             }
             Plus => {
                 self.push_parameters(ir, context, true)?;
@@ -303,10 +316,14 @@ impl LoispInstruction {
                     return Err(LoispError::MismatchedTypes(self.token.clone()));
                 }
 
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Plus,
-                    operand: IrInstructionValue::new(),
-                });
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Plus,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
             }
             Minus => {
                 self.push_parameters(ir, context, true)?;
@@ -324,10 +341,14 @@ impl LoispInstruction {
                     return Err(LoispError::MismatchedTypes(self.token.clone()));
                 }
 
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Minus,
-                    operand: IrInstructionValue::new(),
-                });
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Minus,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
             }
             Multiplication => {
                 self.push_parameters(ir, context, true)?;
@@ -345,10 +366,14 @@ impl LoispInstruction {
                     return Err(LoispError::MismatchedTypes(self.token.clone()));
                 }
 
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Multiplication,
-                    operand: IrInstructionValue::new(),
-                });
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Multiplication,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
             }
             Division => {
                 self.push_parameters(ir, context, true)?;
@@ -366,10 +391,14 @@ impl LoispInstruction {
                     return Err(LoispError::MismatchedTypes(self.token.clone()));
                 }
 
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Division,
-                    operand: IrInstructionValue::new(),
-                });
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Division,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
             }
             Mod => {
                 self.push_parameters(ir, context, true)?;
@@ -387,10 +416,14 @@ impl LoispInstruction {
                     return Err(LoispError::MismatchedTypes(self.token.clone()));
                 }
 
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Mod,
-                    operand: IrInstructionValue::new(),
-                });
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Mod,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
             }
             Syscall => {
                 self.push_parameters(ir, context, true)?;
@@ -408,10 +441,14 @@ impl LoispInstruction {
                     }
                 }
 
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Syscall,
-                    operand: IrInstructionValue::new().integer(self.parameters.len() as i64),
-                });
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Syscall,
+                        operand: IrInstructionValue::new().integer(self.parameters.len() as i64),
+                    },
+                    ir,
+                    context,
+                );
             }
             SetVar => {
                 if self.parameters.len() < 2 {
@@ -449,18 +486,26 @@ impl LoispInstruction {
                 context
                     .variables
                     .insert(self.parameters[0].clone().word.unwrap(), variable.clone());
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::AllocMemory,
-                    operand: IrInstructionValue::new()
-                        .integer(variable.clone().value.size(context) as i64),
-                });
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::AllocMemory,
+                        operand: IrInstructionValue::new()
+                            .integer(variable.clone().value.size(context) as i64),
+                    },
+                    ir,
+                    context,
+                );
 
                 push_value(self.parameters.clone().last().unwrap().clone(), ir, context)?;
 
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::PushMemory,
-                    operand: IrInstructionValue::new().integer(variable.clone().id as i64),
-                });
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::PushMemory,
+                        operand: IrInstructionValue::new().integer(variable.clone().id as i64),
+                    },
+                    ir,
+                    context,
+                );
                 value_size_as_store_instruction(
                     variable.clone().value.datatype(context).unwrap().size(),
                     ir,
@@ -481,12 +526,17 @@ impl LoispInstruction {
 
                 if let Some(var) = context
                     .variables
+                    .clone()
                     .get(self.parameters[0].word.as_ref().unwrap())
                 {
-                    ir.push(IrInstruction {
-                        kind: IrInstructionKind::PushMemory,
-                        operand: IrInstructionValue::new().integer(var.id as i64),
-                    });
+                    ir_push(
+                        IrInstruction {
+                            kind: IrInstructionKind::PushMemory,
+                            operand: IrInstructionValue::new().integer(var.id as i64),
+                        },
+                        ir,
+                        context,
+                    );
                     value_size_as_load_instruction(var.value.clone().size(context), ir);
                 } else {
                     return Err(LoispError::VariableNotFound(
@@ -533,49 +583,21 @@ impl LoispInstruction {
 
                 push_value(self.parameters.clone().last().unwrap().clone(), ir, context)?;
 
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::PushMemory,
-                    operand: IrInstructionValue::new().integer(var.id as i64),
-                });
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::PushMemory,
+                        operand: IrInstructionValue::new().integer(var.id as i64),
+                    },
+                    ir,
+                    context,
+                );
                 value_size_as_store_instruction(
                     var.clone().value.datatype(context).unwrap().size(),
                     ir,
                 );
             }
-            Loop => {
-                let label = context.label_count;
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Label,
-                    operand: IrInstructionValue::new(),
-                });
-                context.label_count += 1;
-                context.loop_context.jump_on_break = context.label_count;
-
-                let previous_inside_loop_state = context.loop_context.inside_loop;
-                context.loop_context.inside_loop = true;
-                self.push_parameters(ir, context, false)?;
-                context.loop_context.inside_loop = previous_inside_loop_state;
-
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Jump,
-                    operand: IrInstructionValue::new().integer(label),
-                });
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Label,
-                    operand: IrInstructionValue::new(),
-                });
-                context.label_count += 1;
-                context.loop_context.jump_on_break = context.label_count;
-            }
-            Break => {
-                if !context.loop_context.inside_loop {
-                    return Err(LoispError::BreakWithoutBeingInLoop(self.token.clone()));
-                }
-                ir.push(IrInstruction {
-                    kind: IrInstructionKind::Jump,
-                    operand: IrInstructionValue::new().integer(context.loop_context.jump_on_break),
-                });
-            }
+            Loop => todo!(),
+            Break => todo!(),
             Nop => {}
         }
         Ok(())

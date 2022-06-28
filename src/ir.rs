@@ -94,8 +94,8 @@ pub enum IrInstructionKind {
     Load64,
     Store64,
     PushMemory,
-    Label,
     Jump,
+    Nop,
 }
 
 #[derive(Clone)]
@@ -257,10 +257,6 @@ impl IrInstruction {
                     }
                 }
             }
-            Label => {
-                writeln!(f, "addr_{}:", context.label_count)?;
-                context.label_count += 1;
-            }
             Jump => {
                 assert_if_enabled!(
                     self.operand.integer <= context.label_count,
@@ -268,6 +264,7 @@ impl IrInstruction {
                 );
                 writeln!(f, "jmp addr_{}", self.operand.integer)?;
             }
+            Nop => {}
         }
 
         Ok(())
@@ -343,7 +340,8 @@ impl IrProgram {
         writeln!(f, "entry start")?;
         writeln!(f, "start:")?;
 
-        for i in &self.instructions {
+        for (k, i) in self.instructions.iter().enumerate() {
+            writeln!(f, "addr_{}:", k)?;
             writeln!(f, ";; -- {:?} --", i.kind)?;
             i.to_intel_linux_x86_64_assembly(&mut f, context)?;
         }
