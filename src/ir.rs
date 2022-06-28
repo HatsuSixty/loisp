@@ -8,6 +8,16 @@ use super::print_info;
 use std::fs;
 use std::io::*;
 
+static IR_ASSERT_ENABLED: bool = true;
+
+macro_rules! assert_if_enabled {
+    ($($arg:tt)*) => {{
+        if IR_ASSERT_ENABLED {
+            assert!($($arg)*);
+        }
+    }};
+}
+
 pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram) {
     match s {
         1 => ir.push(IrInstruction {
@@ -252,7 +262,7 @@ impl IrInstruction {
                 context.label_count += 1;
             }
             Jump => {
-                assert!(
+                assert_if_enabled!(
                     self.operand.integer <= context.label_count,
                     "Label does not exist"
                 );

@@ -556,7 +556,6 @@ impl LoispInstruction {
                 self.push_parameters(ir, context, false)?;
                 context.loop_context.inside_loop = previous_inside_loop_state;
 
-                context.loop_context.jump_on_break = context.label_count + 1;
                 ir.push(IrInstruction {
                     kind: IrInstructionKind::Jump,
                     operand: IrInstructionValue::new().integer(label),
@@ -566,6 +565,7 @@ impl LoispInstruction {
                     operand: IrInstructionValue::new(),
                 });
                 context.label_count += 1;
+                context.loop_context.jump_on_break = context.label_count;
             }
             Break => {
                 if !context.loop_context.inside_loop {
