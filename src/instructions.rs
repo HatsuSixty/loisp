@@ -172,9 +172,85 @@ impl LoispContext {
     }
 }
 
+pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram, context: &mut LoispContext) {
+    match s {
+        1 => ir_push(
+            IrInstruction {
+                kind: IrInstructionKind::Store8,
+                operand: IrInstructionValue::new(),
+            },
+            ir,
+            context,
+        ),
+        2 => ir_push(
+            IrInstruction {
+                kind: IrInstructionKind::Store16,
+                operand: IrInstructionValue::new(),
+            },
+            ir,
+            context,
+        ),
+        4 => ir_push(
+            IrInstruction {
+                kind: IrInstructionKind::Store32,
+                operand: IrInstructionValue::new(),
+            },
+            ir,
+            context,
+        ),
+        8 => ir_push(
+            IrInstruction {
+                kind: IrInstructionKind::Store64,
+                operand: IrInstructionValue::new(),
+            },
+            ir,
+            context,
+        ),
+        _ => panic!("unreachable"),
+    }
+}
+
+pub fn value_size_as_load_instruction(s: usize, ir: &mut IrProgram, context: &mut LoispContext) {
+    match s {
+        1 => ir_push(
+            IrInstruction {
+                kind: IrInstructionKind::Load8,
+                operand: IrInstructionValue::new(),
+            },
+            ir,
+            context,
+        ),
+        2 => ir_push(
+            IrInstruction {
+                kind: IrInstructionKind::Load16,
+                operand: IrInstructionValue::new(),
+            },
+            ir,
+            context,
+        ),
+        4 => ir_push(
+            IrInstruction {
+                kind: IrInstructionKind::Load32,
+                operand: IrInstructionValue::new(),
+            },
+            ir,
+            context,
+        ),
+        8 => ir_push(
+            IrInstruction {
+                kind: IrInstructionKind::Load64,
+                operand: IrInstructionValue::new(),
+            },
+            ir,
+            context,
+        ),
+        _ => panic!("unreachable"),
+    }
+}
+
 pub fn ir_push(inst: IrInstruction, ir: &mut IrProgram, context: &mut LoispContext) {
-    context.label_count += 1;
     ir.push(inst);
+    context.label_count += 1;
 }
 
 pub fn push_value(
@@ -509,6 +585,7 @@ impl LoispInstruction {
                 value_size_as_store_instruction(
                     variable.clone().value.datatype(context).unwrap().size(),
                     ir,
+                    context,
                 );
             }
             GetVar => {
@@ -537,7 +614,7 @@ impl LoispInstruction {
                         ir,
                         context,
                     );
-                    value_size_as_load_instruction(var.value.clone().size(context), ir);
+                    value_size_as_load_instruction(var.value.clone().size(context), ir, context);
                 } else {
                     return Err(LoispError::VariableNotFound(
                         self.parameters[0].token.clone(),
@@ -594,10 +671,40 @@ impl LoispInstruction {
                 value_size_as_store_instruction(
                     var.clone().value.datatype(context).unwrap().size(),
                     ir,
+                    context,
                 );
             }
-            Loop => todo!(),
-            Break => todo!(),
+            Loop => {
+                let loop_begin = context.label_count;
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Nop,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+
+                let previous_inside_loop_state = context.loop_context.inside_loop;
+                context.loop_context.inside_loop = true;
+                self.push_parameters(ir, context, false)?;
+                context.loop_context.inside_loop = previous_inside_loop_state;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Jump,
+                        operand: IrInstructionValue::new().integer(loop_begin),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            Break => {
+                if !context.loop_context.inside_loop {
+                    return Err(LoispError::BreakWithoutBeingInLoop(self.token.clone()));
+                }
+                todo!()
+            }
             Nop => {}
         }
         Ok(())
