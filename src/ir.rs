@@ -8,7 +8,7 @@ use super::print_info;
 use std::fs;
 use std::io::*;
 
-static IR_ASSERT_ENABLED: bool = true;
+static IR_ASSERT_ENABLED: bool = false;
 
 macro_rules! assert_if_enabled {
     ($($arg:tt)*) => {{
@@ -52,6 +52,7 @@ pub enum IrInstructionKind {
     PushMemory,
     Jump,
     Nop,
+    If,
 }
 
 #[derive(Clone)]
@@ -89,7 +90,7 @@ impl IrContext {
     pub fn new() -> IrContext {
         IrContext {
             memories: vec![],
-            label_count: 0,
+            label_count: 1,
         }
     }
 }
@@ -220,6 +221,15 @@ impl IrInstruction {
                 );
                 writeln!(f, "jmp addr_{}", self.operand.integer)?;
             }
+            If => {
+                assert_if_enabled!(
+                    self.operand.integer <= context.label_count,
+                    "Label does not exist"
+                );
+                writeln!(f, "pop rax")?;
+                writeln!(f, "test rax, rax")?;
+                writeln!(f, "jz addr_{}", self.operand.integer)?;
+            }
             Nop => {}
         }
 
@@ -298,6 +308,7 @@ impl IrProgram {
 
         for (k, i) in self.instructions.iter().enumerate() {
             writeln!(f, "addr_{}:", k)?;
+            context.label_count += 1;
             writeln!(f, ";; -- {:?} --", i.kind)?;
             i.to_intel_linux_x86_64_assembly(&mut f, context)?;
         }

@@ -16,7 +16,6 @@ pub enum LoispError {
     StandardError(io::Error),
     VariableNotFound(LexerToken),
     VariableRedefinition(LexerToken),
-    BreakWithoutBeingInLoop(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -49,11 +48,6 @@ impl fmt::Display for LoispError {
                 "{}: ERROR: Variable redefinition: `{}`",
                 token.location, token.value.string
             )?,
-            Self::BreakWithoutBeingInLoop(token) => write!(
-                f,
-                "{}: ERROR: Cannot break without being inside a loop",
-                token.location
-            )?,
         }
         Ok(())
     }
@@ -83,9 +77,8 @@ pub enum LoispInstructionType {
     SetVar,
     GetVar,
     ChVar,
-    Loop,
-    Break,
     Nop,
+    While,
 }
 
 #[derive(Debug, Clone)]
@@ -322,8 +315,7 @@ impl LoispInstruction {
                 }
             }
             LoispInstructionType::ChVar => Nothing,
-            LoispInstructionType::Loop => Nothing,
-            LoispInstructionType::Break => Nothing,
+            LoispInstructionType::While => Nothing,
         }
     }
 
@@ -674,21 +666,33 @@ impl LoispInstruction {
                     context,
                 );
             }
-            Loop => {
+            While => {
                 let loop_begin = context.label_count;
+
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                push_value(self.parameters[0].clone(), ir, context)?;
+
+                let after_end = context.label_count + (self.parameters.len() as i64) + 2;
+
                 ir_push(
                     IrInstruction {
-                        kind: IrInstructionKind::Nop,
-                        operand: IrInstructionValue::new(),
+                        kind: IrInstructionKind::If,
+                        operand: IrInstructionValue::new().integer(after_end),
                     },
                     ir,
                     context,
                 );
 
-                let previous_inside_loop_state = context.loop_context.inside_loop;
-                context.loop_context.inside_loop = true;
-                self.push_parameters(ir, context, false)?;
-                context.loop_context.inside_loop = previous_inside_loop_state;
+                {
+                    let mut parameters = self.parameters.clone();
+                    parameters.remove(0);
+                    for p in parameters {
+                        push_value(p, ir, context)?;
+                    }
+                }
 
                 ir_push(
                     IrInstruction {
@@ -698,12 +702,14 @@ impl LoispInstruction {
                     ir,
                     context,
                 );
-            }
-            Break => {
-                if !context.loop_context.inside_loop {
-                    return Err(LoispError::BreakWithoutBeingInLoop(self.token.clone()));
-                }
-                todo!()
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Nop,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
             }
             Nop => {}
         }
