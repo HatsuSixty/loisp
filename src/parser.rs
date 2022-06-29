@@ -52,6 +52,8 @@ pub fn token_to_instruction_kind(token: LexerToken) -> Result<LoispInstructionTy
         "getvar" => Ok(LoispInstructionType::GetVar),
         "chvar" => Ok(LoispInstructionType::ChVar),
         "while" => Ok(LoispInstructionType::While),
+        "=" => Ok(LoispInstructionType::Equal),
+        "ne" => Ok(LoispInstructionType::NotEqual),
         _ => Err(ParserError::UnknownInstruction(token.clone())),
     }
 }

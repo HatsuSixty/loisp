@@ -53,6 +53,8 @@ pub enum IrInstructionKind {
     Jump,
     Nop,
     If,
+    Equal,
+    NotEqual,
 }
 
 #[derive(Clone)]
@@ -90,7 +92,7 @@ impl IrContext {
     pub fn new() -> IrContext {
         IrContext {
             memories: vec![],
-            label_count: 1,
+            label_count: 0,
         }
     }
 }
@@ -229,6 +231,24 @@ impl IrInstruction {
                 writeln!(f, "pop rax")?;
                 writeln!(f, "test rax, rax")?;
                 writeln!(f, "jz addr_{}", self.operand.integer)?;
+            }
+            Equal => {
+                writeln!(f, "mov rcx, 0")?;
+                writeln!(f, "mov rdx, 1")?;
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "cmp rax, rbx")?;
+                writeln!(f, "cmove rcx, rdx")?;
+                writeln!(f, "push rcx")?;
+            }
+            NotEqual => {
+                writeln!(f, "mov rcx, 0")?;
+                writeln!(f, "mov rdx, 1")?;
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "cmp rax, rbx")?;
+                writeln!(f, "cmovne rcx, rdx")?;
+                writeln!(f, "push rcx")?;
             }
             Nop => {}
         }

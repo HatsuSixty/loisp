@@ -79,6 +79,8 @@ pub enum LoispInstructionType {
     ChVar,
     Nop,
     While,
+    Equal,
+    NotEqual,
 }
 
 #[derive(Debug, Clone)]
@@ -134,25 +136,9 @@ pub struct LoispVariable {
 }
 
 #[derive(Debug)]
-pub struct LoispLoopContext {
-    pub inside_loop: bool,
-    pub jump_on_break: i64,
-}
-
-impl LoispLoopContext {
-    pub fn new() -> LoispLoopContext {
-        LoispLoopContext {
-            inside_loop: false,
-            jump_on_break: 0,
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct LoispContext {
     pub variables: HashMap<String, LoispVariable>,
     pub label_count: i64,
-    pub loop_context: LoispLoopContext,
 }
 
 impl LoispContext {
@@ -160,7 +146,6 @@ impl LoispContext {
         LoispContext {
             variables: HashMap::new(),
             label_count: 0,
-            loop_context: LoispLoopContext::new(),
         }
     }
 }
@@ -316,6 +301,8 @@ impl LoispInstruction {
             }
             LoispInstructionType::ChVar => Nothing,
             LoispInstructionType::While => Nothing,
+            LoispInstructionType::Equal => Integer,
+            LoispInstructionType::NotEqual => Integer,
         }
     }
 
@@ -675,12 +662,12 @@ impl LoispInstruction {
 
                 push_value(self.parameters[0].clone(), ir, context)?;
 
-                let after_end = context.label_count + (self.parameters.len() as i64) + 2;
+                let if_addr = context.label_count;
 
                 ir_push(
                     IrInstruction {
                         kind: IrInstructionKind::If,
-                        operand: IrInstructionValue::new().integer(after_end),
+                        operand: IrInstructionValue::new(),
                     },
                     ir,
                     context,
@@ -702,9 +689,78 @@ impl LoispInstruction {
                     ir,
                     context,
                 );
+
+                let after_end = context.label_count;
+                ir.instructions[if_addr as usize].operand =
+                    IrInstructionValue::new().integer(after_end + 1);
+
                 ir_push(
                     IrInstruction {
                         kind: IrInstructionKind::Nop,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Nop,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            Equal => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer
+                    || self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer
+                {
+                    return Err(LoispError::MismatchedTypes(
+                        self.parameters[0].token.clone(),
+                    ));
+                }
+
+                self.push_parameters(ir, context, true)?;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Equal,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            NotEqual => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer
+                    || self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer
+                {
+                    return Err(LoispError::MismatchedTypes(
+                        self.parameters[0].token.clone(),
+                    ));
+                }
+
+                self.push_parameters(ir, context, true)?;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::NotEqual,
                         operand: IrInstructionValue::new(),
                     },
                     ir,
