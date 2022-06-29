@@ -36,5 +36,4 @@ The available instructios are the following:
 | `setvar`    | Create a variable with the name given as first parameter and set the value of that variable to the value of the second parameter      |
 | `getvar`    | Return the value of the variable name given as first parameter                                                                        |
 | `chvar`     | Change the value of an variable to the specified one                                                                                  |
-| `loop`      | Execute the instructios given as parameter in loop                                                                                    |
-| `break`     | Break out of the current loop                                                                                                         |
+| `while`     | Keeps executing the instructions given as parameters until the first parameter (condition) returns 0                                  |

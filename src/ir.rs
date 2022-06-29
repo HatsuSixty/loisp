@@ -8,7 +8,7 @@ use super::print_info;
 use std::fs;
 use std::io::*;
 
-static IR_ASSERT_ENABLED: bool = true;
+static IR_ASSERT_ENABLED: bool = false;
 
 macro_rules! assert_if_enabled {
     ($($arg:tt)*) => {{
@@ -16,50 +16,6 @@ macro_rules! assert_if_enabled {
             assert!($($arg)*);
         }
     }};
-}
-
-pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram) {
-    match s {
-        1 => ir.push(IrInstruction {
-            kind: IrInstructionKind::Store8,
-            operand: IrInstructionValue::new(),
-        }),
-        2 => ir.push(IrInstruction {
-            kind: IrInstructionKind::Store16,
-            operand: IrInstructionValue::new(),
-        }),
-        4 => ir.push(IrInstruction {
-            kind: IrInstructionKind::Store32,
-            operand: IrInstructionValue::new(),
-        }),
-        8 => ir.push(IrInstruction {
-            kind: IrInstructionKind::Store64,
-            operand: IrInstructionValue::new(),
-        }),
-        _ => panic!("unreachable"),
-    }
-}
-
-pub fn value_size_as_load_instruction(s: usize, ir: &mut IrProgram) {
-    match s {
-        1 => ir.push(IrInstruction {
-            kind: IrInstructionKind::Load8,
-            operand: IrInstructionValue::new(),
-        }),
-        2 => ir.push(IrInstruction {
-            kind: IrInstructionKind::Load16,
-            operand: IrInstructionValue::new(),
-        }),
-        4 => ir.push(IrInstruction {
-            kind: IrInstructionKind::Load32,
-            operand: IrInstructionValue::new(),
-        }),
-        8 => ir.push(IrInstruction {
-            kind: IrInstructionKind::Load64,
-            operand: IrInstructionValue::new(),
-        }),
-        _ => panic!("unreachable"),
-    }
 }
 
 pub fn syscall_number_as_register(n: i64) -> String {
@@ -94,8 +50,11 @@ pub enum IrInstructionKind {
     Load64,
     Store64,
     PushMemory,
-    Label,
     Jump,
+    Nop,
+    If,
+    Equal,
+    NotEqual,
 }
 
 #[derive(Clone)]
@@ -257,10 +216,6 @@ impl IrInstruction {
                     }
                 }
             }
-            Label => {
-                writeln!(f, "addr_{}:", context.label_count)?;
-                context.label_count += 1;
-            }
             Jump => {
                 assert_if_enabled!(
                     self.operand.integer <= context.label_count,
@@ -268,6 +223,34 @@ impl IrInstruction {
                 );
                 writeln!(f, "jmp addr_{}", self.operand.integer)?;
             }
+            If => {
+                assert_if_enabled!(
+                    self.operand.integer <= context.label_count,
+                    "Label does not exist"
+                );
+                writeln!(f, "pop rax")?;
+                writeln!(f, "test rax, rax")?;
+                writeln!(f, "jz addr_{}", self.operand.integer)?;
+            }
+            Equal => {
+                writeln!(f, "mov rcx, 0")?;
+                writeln!(f, "mov rdx, 1")?;
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "cmp rax, rbx")?;
+                writeln!(f, "cmove rcx, rdx")?;
+                writeln!(f, "push rcx")?;
+            }
+            NotEqual => {
+                writeln!(f, "mov rcx, 0")?;
+                writeln!(f, "mov rdx, 1")?;
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "cmp rax, rbx")?;
+                writeln!(f, "cmovne rcx, rdx")?;
+                writeln!(f, "push rcx")?;
+            }
+            Nop => {}
         }
 
         Ok(())
@@ -343,7 +326,9 @@ impl IrProgram {
         writeln!(f, "entry start")?;
         writeln!(f, "start:")?;
 
-        for i in &self.instructions {
+        for (k, i) in self.instructions.iter().enumerate() {
+            writeln!(f, "addr_{}:", k)?;
+            context.label_count += 1;
             writeln!(f, ";; -- {:?} --", i.kind)?;
             i.to_intel_linux_x86_64_assembly(&mut f, context)?;
         }
