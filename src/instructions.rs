@@ -16,6 +16,7 @@ pub enum LoispError {
     StandardError(io::Error),
     VariableNotFound(LexerToken),
     VariableRedefinition(LexerToken),
+    NoDeclarationsInLoops(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -47,6 +48,11 @@ impl fmt::Display for LoispError {
                 f,
                 "{}: ERROR: Variable redefinition: `{}`",
                 token.location, token.value.string
+            )?,
+            Self::NoDeclarationsInLoops(token) => write!(
+                f,
+                "{}: ERROR: Declarations in loops are not allowed",
+                token.location
             )?,
         }
         Ok(())
@@ -677,6 +683,11 @@ impl LoispInstruction {
                     let mut parameters = self.parameters.clone();
                     parameters.remove(0);
                     for p in parameters {
+                        if p.is_instruction_return() {
+                            if p.instruction_return.kind == LoispInstructionType::SetVar {
+                                return Err(LoispError::NoDeclarationsInLoops(p.token));
+                            }
+                        }
                         push_value(p, ir, context)?;
                     }
                 }
