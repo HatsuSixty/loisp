@@ -56,6 +56,7 @@ pub enum IrInstructionKind {
     Equal,
     NotEqual,
     Less,
+    Greater,
 }
 
 #[derive(Clone)]
@@ -258,6 +259,15 @@ impl IrInstruction {
                 writeln!(f, "pop rbx")?;
                 writeln!(f, "cmp rax, rbx")?;
                 writeln!(f, "cmovl rcx, rdx")?;
+                writeln!(f, "push rcx")?;
+            }
+            Greater => {
+                writeln!(f, "mov rcx, 0")?;
+                writeln!(f, "mov rdx, 1")?;
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "cmp rax, rbx")?;
+                writeln!(f, "cmovg rcx, rdx")?;
                 writeln!(f, "push rcx")?;
             }
             Nop => {}
