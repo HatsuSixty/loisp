@@ -2,6 +2,8 @@ use std::fs;
 use std::io;
 use std::process::Command;
 use std::str;
+use std::io::BufWriter;
+use std::io::Write;
 
 #[derive(Debug, Clone)]
 pub struct TestCase {
@@ -45,7 +47,7 @@ pub fn read_file_return_test_case(file: String) -> io::Result<TestCase> {
     let source = fs::read_to_string(file.as_str())?;
 
     let mut lines: Vec<String> = vec![];
-    for s in source.trim().split('\n') {
+    for s in source.trim().split('|') {
         lines.push(s.to_string());
     }
 
@@ -79,6 +81,21 @@ pub fn read_file_return_test_case(file: String) -> io::Result<TestCase> {
 }
 
 #[allow(dead_code)]
-pub fn run_test_case_for_file(_file: String) {
-    todo!()
+pub fn save_test_case_in_conf_file(test: TestCase, file: String) -> io::Result<()> {
+    let f = fs::OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(file)?;
+
+    let mut buffer = BufWriter::new(f);
+
+    write!(buffer, "stdout = {}|stderr = {}", test.stdout, test.stderr)?;
+    write!(buffer, "|args =")?;
+    for a in test.args {
+        write!(buffer, " {}", a)?;
+    }
+
+    buffer.flush()?;
+    Ok(())
 }
