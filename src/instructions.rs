@@ -87,6 +87,7 @@ pub enum LoispInstructionType {
     While,
     Equal,
     NotEqual,
+    If,
 }
 
 #[derive(Debug, Clone)]
@@ -309,6 +310,7 @@ impl LoispInstruction {
             LoispInstructionType::While => Nothing,
             LoispInstructionType::Equal => Integer,
             LoispInstructionType::NotEqual => Integer,
+            LoispInstructionType::If => Nothing,
         }
     }
 
@@ -772,6 +774,62 @@ impl LoispInstruction {
                 ir_push(
                     IrInstruction {
                         kind: IrInstructionKind::NotEqual,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            If => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                push_value(self.parameters[0].clone(), ir, context)?;
+
+                let if_addr = context.label_count;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::If,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+
+                {
+                    let mut parameters = self.parameters.clone();
+                    parameters.remove(0);
+                    for p in parameters {
+                        if p.is_instruction_return() {
+                            if p.instruction_return.kind == LoispInstructionType::SetVar {
+                                return Err(LoispError::NoDeclarationsInLoops(p.token));
+                            }
+                        }
+                        push_value(p, ir, context)?;
+                    }
+                }
+
+                let after_end = context.label_count;
+                ir.instructions[if_addr as usize].operand =
+                    IrInstructionValue::new().integer(after_end + 1);
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Nop,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Nop,
                         operand: IrInstructionValue::new(),
                     },
                     ir,
