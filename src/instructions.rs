@@ -88,6 +88,7 @@ pub enum LoispInstructionType {
     Equal,
     NotEqual,
     If,
+    Block,
 }
 
 #[derive(Debug, Clone)]
@@ -311,6 +312,7 @@ impl LoispInstruction {
             LoispInstructionType::Equal => Integer,
             LoispInstructionType::NotEqual => Integer,
             LoispInstructionType::If => Nothing,
+            LoispInstructionType::Block => Nothing,
         }
     }
 
@@ -781,8 +783,12 @@ impl LoispInstruction {
                 );
             }
             If => {
-                if self.parameters.len() < 2 {
+                if self.parameters.len() < 3 {
                     return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 3 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
                 }
 
                 if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer {
@@ -802,21 +808,43 @@ impl LoispInstruction {
                     context,
                 );
 
-                {
-                    let mut parameters = self.parameters.clone();
-                    parameters.remove(0);
-                    for p in parameters {
-                        if p.is_instruction_return() {
-                            if p.instruction_return.kind == LoispInstructionType::SetVar {
-                                return Err(LoispError::NoDeclarationsInLoops(p.token));
-                            }
-                        }
-                        push_value(p, ir, context)?;
-                    }
-                }
+                push_value(self.parameters[1].clone(), ir, context)?;
+
+                let else_addr = context.label_count;
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Jump,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+
+                let after_else = context.label_count;
+                ir.instructions[if_addr as usize].operand =
+                    IrInstructionValue::new().integer(after_else + 1);
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Nop,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Nop,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+
+                push_value(self.parameters[2].clone(), ir, context)?;
 
                 let after_end = context.label_count;
-                ir.instructions[if_addr as usize].operand =
+                ir.instructions[else_addr as usize].operand =
                     IrInstructionValue::new().integer(after_end + 1);
 
                 ir_push(
@@ -835,6 +863,9 @@ impl LoispInstruction {
                     ir,
                     context,
                 );
+            }
+            Block => {
+                self.push_parameters(ir, context, false)?;
             }
             Nop => {}
         }
