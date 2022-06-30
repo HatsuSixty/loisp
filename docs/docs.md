@@ -64,7 +64,7 @@ Output:
 10
 ```
 
-### Loops
+### Loops:
 
 ```lisp
 (while <condition>
