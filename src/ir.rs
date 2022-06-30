@@ -389,6 +389,7 @@ pub fn compile_file_into_executable(config: Config) -> Result<()> {
     }
     let output_assembly = format!("{}.asm", config_output);
     let output_executable = format!("{}.tmp", config_output);
+    let final_output_executable = format!("{}.out", config_output);
 
     compile_file_into_assembly(
         config.input.as_str(),
@@ -398,7 +399,7 @@ pub fn compile_file_into_executable(config: Config) -> Result<()> {
 
     let assembler_command = format!("fasm -m 524288 {} {}", output_assembly, output_executable);
     let chmod_command = format!("chmod +x {}", output_executable);
-    let rename_command = format!("mv {} {}", output_executable, config_output);
+    let rename_command = format!("mv {} {}", output_executable, final_output_executable);
 
     run_command_with_info(assembler_command, config.clone())?;
     run_command_with_info(chmod_command, config.clone())?;
@@ -408,7 +409,7 @@ pub fn compile_file_into_executable(config: Config) -> Result<()> {
         let mut c = config.clone();
         c.piped = false;
         if config.run.run {
-            let mut command = format!("./{}", config_output);
+            let mut command = format!("./{}", final_output_executable);
             for a in config.run.args {
                 command = format!("{} {}", command, a);
             }

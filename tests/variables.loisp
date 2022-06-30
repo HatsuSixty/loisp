@@ -1,0 +1,4 @@
+(setvar x 0)
+(print (getvar x))
+(chvar x (+(getvar x)1))
+(print (getvar x))

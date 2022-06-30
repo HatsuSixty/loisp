@@ -4,11 +4,13 @@ mod instructions;
 mod ir;
 mod lexer;
 mod parser;
+mod tests;
 mod types;
 
 use config::*;
 use instructions::*;
 use ir::*;
+use tests::*;
 
 use std::env;
 use std::ffi::OsString;
@@ -16,9 +18,11 @@ use std::ffi::OsString;
 fn usage(stderr: bool) {
     let help = "Usage: loisp [FLAGS] <SUBCOMMAND>
     Subcommands:
-        build <file>   Compile <file> into an executable
-        run   <file>   Compile <file> into an executable and run the generated executable
-        help           Prints this help to stdout and exits with 0 exit code
+        build <file>       Compile <file> into an executable
+        run   <file>       Compile <file> into an executable and run the generated executable
+        save-test <folder> Save test cases for each file in <folder>
+        run-test  <folder> Run tests for each file in <folder>
+        help               Prints this help to stdout and exits with 0 exit code
     Flags:
         -s             Do not show any output (except errors)
         -o <file>      Change the name of the executable that gets generated\n";
@@ -80,6 +84,26 @@ fn main() -> Result<(), LoispError> {
                         run_flags.push(flag);
                     }
                     break;
+                }
+                "save-test" => {
+                    if let Some(i) = shift(&mut args) {
+                        save_tests_for_folder(i)?;
+                        std::process::exit(0);
+                    } else {
+                        usage(true);
+                        eprintln!("ERROR: No input folder was provided");
+                        std::process::exit(1);
+                    }
+                }
+                "run-test" => {
+                    if let Some(i) = shift(&mut args) {
+                        run_tests_for_folder(i)?;
+                        std::process::exit(0);
+                    } else {
+                        usage(true);
+                        eprintln!("ERROR: No input folder was provided");
+                        std::process::exit(1);
+                    }
                 }
                 "help" => {
                     usage(false);
