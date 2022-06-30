@@ -90,7 +90,7 @@ pub fn save_test_case_in_conf_file(test: TestCase, file: String) -> io::Result<(
 
     let mut buffer = BufWriter::new(f);
 
-    write!(buffer, "stdout = {}|stderr = {}", test.stdout, test.stderr)?;
+    write!(buffer, "stdout = {}|stderr = {}", test.stdout.trim(), test.stderr.trim())?;
     write!(buffer, "|args =")?;
     for a in test.args {
         write!(buffer, " {}", a)?;
