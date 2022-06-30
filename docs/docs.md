@@ -17,7 +17,7 @@ The fact that this language is S-expression based is given by the fact that, the
 
 ### References
 
-- Reverse polish notation: https://en.wikipedia.org/wiki/Polish_notation
+- Polish notation: https://en.wikipedia.org/wiki/Polish_notation
 - S-expressions: https://en.wikipedia.org/wiki/S-expression
 
 ## Instructions
@@ -34,6 +34,6 @@ The available instructios are the following:
 | `%`         | Return the rest of the division between the parameters                                                                                |
 | `syscall`   | Perform a syscall with the first parameter being the number of the syscall and the rest of the parameters being passed to the syscall |
 | `setvar`    | Create a variable with the name given as first parameter and set the value of that variable to the value of the second parameter      |
-| `getvar`    | Return the value of the variable name given as first parameter                                                                        |
+| `getvar`    | Return the value of the variable with name given as first parameter                                                                        |
 | `chvar`     | Change the value of an variable to the specified one                                                                                  |
 | `while`     | Keeps executing the instructions given as parameters until the first parameter (condition) returns 0                                  |
