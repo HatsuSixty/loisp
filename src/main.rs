@@ -21,6 +21,7 @@ fn usage(stderr: bool) {
         build <file>       Compile <file> into an executable
         run   <file>       Compile <file> into an executable and run the generated executable
         save-test <folder> Save test cases for each file in <folder>
+        run-test  <folder> Run tests for each file in <folder>
         help               Prints this help to stdout and exits with 0 exit code
     Flags:
         -s             Do not show any output (except errors)
@@ -87,6 +88,16 @@ fn main() -> Result<(), LoispError> {
                 "save-test" => {
                     if let Some(i) = shift(&mut args) {
                         save_tests_for_folder(i)?;
+                        std::process::exit(0);
+                    } else {
+                        usage(true);
+                        eprintln!("ERROR: No input folder was provided");
+                        std::process::exit(1);
+                    }
+                }
+                "run-test" => {
+                    if let Some(i) = shift(&mut args) {
+                        run_tests_for_folder(i)?;
                         std::process::exit(0);
                     } else {
                         usage(true);

@@ -2,6 +2,7 @@ use std::fs;
 use std::io;
 use std::io::BufWriter;
 use std::io::Write;
+use std::path::Path;
 use std::process::Command;
 use std::str;
 
@@ -10,7 +11,7 @@ use super::print_info;
 
 static LOISP_FILE_EXTENSION: &str = ".loisp";
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TestCase {
     pub args: Vec<String>,
     pub stdout: String,
@@ -36,11 +37,11 @@ pub fn cmd_run_return_test_case(cmd: String) -> TestCase {
 
     match exit_code {
         Some(code) => print_info!("INFO", "Program exited with code `{}`", code),
-        None       => print_info!("INFO", "Program exited with signal"),
+        None => print_info!("INFO", "Program exited with signal"),
     }
 
-    test_case.stdout = str::from_utf8(&output.stdout[..]).unwrap().to_string();
-    test_case.stderr = str::from_utf8(&output.stderr[..]).unwrap().to_string();
+    test_case.stdout = String::from_utf8(output.stdout).unwrap().trim().to_string();
+    test_case.stderr = String::from_utf8(output.stderr).unwrap().trim().to_string();
 
     for s in cmd.trim().split(' ') {
         test_case.args.push(s.to_string());
@@ -139,5 +140,40 @@ pub fn save_tests_for_folder(folder: String) -> io::Result<()> {
             println!();
         }
     }
+    Ok(())
+}
+
+pub fn run_tests_for_folder(folder: String) -> io::Result<()> {
+    print_info!("INFO", "Running tests for folder `{}`", folder);
+
+    let dir = fs::read_dir(folder)?;
+    let mut paths: Vec<String> = vec![];
+
+    for path in dir {
+        paths.push(format!("{}", path?.path().display()));
+    }
+
+    for p in paths {
+        if p.ends_with(LOISP_FILE_EXTENSION) {
+            let expected_path = format!("{}.conf", file_name_without_extension(p.clone()));
+            if !Path::new(expected_path.as_str()).exists() {
+                print_info!(
+                    "WARN",
+                    "No output found for `{}`, only testing if it compiles",
+                    p.clone()
+                );
+            } else {
+                let got =
+                    cmd_run_return_test_case(format!("./target/debug/loisp -s run {}", p.clone()));
+                let expected = read_file_return_test_case(expected_path)?;
+
+                if expected != got {
+                    todo!("report\n    expected: {:#?}\n    got: {:#?}", expected, got)
+                }
+            }
+            println!();
+        }
+    }
+
     Ok(())
 }
