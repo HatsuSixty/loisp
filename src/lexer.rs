@@ -9,6 +9,10 @@ pub enum LexerTokenKind {
     Integer,
 }
 
+pub fn is_special_token(c: char) -> bool {
+    c == '(' || c == ')' || c == ' ' || c == '\n' || c == '\r'
+}
+
 #[derive(Debug, Clone)]
 pub struct LexerTokenValue {
     pub integer: i64,
@@ -105,7 +109,7 @@ impl<Chars: Iterator<Item = char>> Iterator for Lexer<Chars> {
                     location: self.location.clone(),
                 }),
                 _ => {
-                    while let Some(x) = self.chars.next_if(|x| x.is_alphanumeric()) {
+                    while let Some(x) = self.chars.next_if(|x| !is_special_token(*x)) {
                         text.push(x);
                         self.advance_location(x);
                     }
