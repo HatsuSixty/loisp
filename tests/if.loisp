@@ -1,5 +1,5 @@
 (setvar x 0)
-(while (ne (getvar x) 20)
+(while (!= (getvar x) 20)
   (if (=(%(getvar x)15)0)
     (print 69420)
     (block
