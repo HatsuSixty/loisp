@@ -1,9 +1,14 @@
 use std::fs;
 use std::io;
-use std::process::Command;
-use std::str;
 use std::io::BufWriter;
 use std::io::Write;
+use std::process::Command;
+use std::str;
+
+use super::common::*;
+use super::print_info;
+
+static LOISP_FILE_EXTENSION: &str = ".loisp";
 
 #[derive(Debug, Clone)]
 pub struct TestCase {
@@ -14,6 +19,8 @@ pub struct TestCase {
 
 #[allow(dead_code)]
 pub fn cmd_run_return_test_case(cmd: String) -> TestCase {
+    print_info!("CMD", "{}", cmd);
+
     let mut test_case = TestCase {
         args: vec![],
         stdout: String::new(),
@@ -25,6 +32,12 @@ pub fn cmd_run_return_test_case(cmd: String) -> TestCase {
         .arg(cmd.as_str())
         .output()
         .expect("Failed to run shell command");
+    let exit_code = output.status.code();
+
+    match exit_code {
+        Some(code) => print_info!("INFO", "Program exited with code `{}`", code),
+        None       => print_info!("INFO", "Program exited with signal"),
+    }
 
     test_case.stdout = str::from_utf8(&output.stdout[..]).unwrap().to_string();
     test_case.stderr = str::from_utf8(&output.stderr[..]).unwrap().to_string();
@@ -82,6 +95,8 @@ pub fn read_file_return_test_case(file: String) -> io::Result<TestCase> {
 
 #[allow(dead_code)]
 pub fn save_test_case_in_conf_file(test: TestCase, file: String) -> io::Result<()> {
+    print_info!("INFO", "Saving output to `{}`", file);
+
     let f = fs::OpenOptions::new()
         .create(true)
         .truncate(true)
@@ -90,12 +105,39 @@ pub fn save_test_case_in_conf_file(test: TestCase, file: String) -> io::Result<(
 
     let mut buffer = BufWriter::new(f);
 
-    write!(buffer, "stdout = {}|stderr = {}", test.stdout.trim(), test.stderr.trim())?;
+    write!(
+        buffer,
+        "stdout = {}|stderr = {}",
+        test.stdout.trim(),
+        test.stderr.trim()
+    )?;
     write!(buffer, "|args =")?;
     for a in test.args {
         write!(buffer, " {}", a)?;
     }
 
     buffer.flush()?;
+    Ok(())
+}
+
+#[allow(dead_code)]
+pub fn save_tests_for_folder(folder: String) -> io::Result<()> {
+    print_info!("INFO", "Saving tests for folder `{}`", folder);
+
+    let dir = fs::read_dir(folder)?;
+    let mut paths: Vec<String> = vec![];
+
+    for path in dir {
+        paths.push(format!("{}", path?.path().display()));
+    }
+
+    for p in paths {
+        if p.ends_with(LOISP_FILE_EXTENSION) {
+            let tc = cmd_run_return_test_case(format!("./target/debug/loisp -s run {}", p));
+            let tc_output = format!("{}.conf", file_name_without_extension(p));
+            save_test_case_in_conf_file(tc, tc_output)?;
+            println!();
+        }
+    }
     Ok(())
 }
