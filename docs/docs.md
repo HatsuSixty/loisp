@@ -34,6 +34,63 @@ The available instructios are the following:
 | `%`         | Return the rest of the division between the parameters                                                                                |
 | `syscall`   | Perform a syscall with the first parameter being the number of the syscall and the rest of the parameters being passed to the syscall |
 | `setvar`    | Create a variable with the name given as first parameter and set the value of that variable to the value of the second parameter      |
-| `getvar`    | Return the value of the variable with name given as first parameter                                                                        |
+| `getvar`    | Return the value of the variable with name given as first parameter                                                                   |
 | `chvar`     | Change the value of an variable to the specified one                                                                                  |
 | `while`     | Keeps executing the instructions given as parameters until the first parameter (condition) returns 0                                  |
+| `if`        | Use the first parameter as a condition, if the condition returns 1, it executes the block given as 1st parameter, else the 2nd one    |
+| `block`     | Just executes all the instructions given as parameters                                                                                |
+## Control Flow
+
+### Conditions:
+
+```lisp
+(if <condition>
+  <then>
+  <else>
+)
+```
+
+#### Example
+
+```lisp
+(if 1
+  (print 10)
+  (block)
+)
+```
+Output:
+
+```console
+10
+```
+
+### Loops
+
+```lisp
+(while <condition>
+  <body>
+)
+```
+#### Example
+
+```lisp
+(setvar x 0)
+
+(while (ne (getvar x) 10)
+  (print (getvar x))
+  (chvar x (+(getvar x)1))
+)
+```
+Output:
+```console
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+```
