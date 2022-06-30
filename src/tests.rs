@@ -185,6 +185,8 @@ pub fn run_tests_for_folder(folder: String) -> io::Result<()> {
                 if !compiled {
                     print_info!("ERROR", "Test not compiled");
                     stats.failed += 1;
+                } else {
+                    stats.passed += 1;
                 }
                 stats.ignored += 1;
             } else {
