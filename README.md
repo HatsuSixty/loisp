@@ -11,6 +11,14 @@ $ echo "(print (+ 34 35))" > test.loisp
 $ cargo run -- run test.loisp
 ```
 
+## Testing
+
+The compiler has a tester built-in to it, so you can use that to test if all the features are working properly. To use the built-in tester, there is a subcommand to use it:
+
+```console
+$ cargo run -- run-test tests # for more details, see `cargo run -- help`
+```
+
 ## This language is planned to be
 
 - [x] Compiled
