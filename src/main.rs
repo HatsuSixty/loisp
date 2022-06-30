@@ -5,6 +5,7 @@ mod ir;
 mod lexer;
 mod parser;
 mod types;
+mod tests;
 
 use config::*;
 use instructions::*;
