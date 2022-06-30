@@ -89,6 +89,7 @@ pub enum LoispInstructionType {
     NotEqual,
     Less,
     Greater,
+    LessEqual,
     If,
     Block,
 }
@@ -317,6 +318,7 @@ impl LoispInstruction {
             LoispInstructionType::Block => Nothing,
             LoispInstructionType::Less => Integer,
             LoispInstructionType::Greater => Integer,
+            LoispInstructionType::LessEqual => Integer,
         }
     }
 
@@ -917,6 +919,32 @@ impl LoispInstruction {
                 ir_push(
                     IrInstruction {
                         kind: IrInstructionKind::Greater,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            LessEqual => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer
+                    && self.parameters[1].datatype(context).unwrap() != LoispDatatype::Integer
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                self.push_parameters(ir, context, true)?;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::LessEqual,
                         operand: IrInstructionValue::new(),
                     },
                     ir,
