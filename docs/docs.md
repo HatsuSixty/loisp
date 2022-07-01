@@ -47,8 +47,9 @@ The available instructios are the following:
 | `>=`        | Compare 2 parameters and return 1 if the first is greater than the second or if they are equal                                        |
 | `ptrto`     | Return a pointer to the variable that has the name given as first parameter                                                           |
 | `load64`    | Return a value by dereferecing the pointer given as first parameter                                                                   |
-| `store64`   | Store the value given as second parameter into the pointer that given as first parameter                                              |
+| `store64`   | Store the value given as second parameter into the pointer that was given as first parameter                                          |
 | `load32`    | Return a 32 bit value by dereferecing the pointer given as first parameter                                                            |
+| `store32`   | Store a 32 bit value given as second parameter into the pointer that was given as first parameter                                     |
 
 ## Control Flow
 
