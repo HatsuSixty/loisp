@@ -48,6 +48,7 @@ The available instructios are the following:
 | `ptrto`     | Return a pointer to the variable that has the name given as first parameter                                                           |
 | `load64`    | Return a value by dereferecing the pointer given as first parameter                                                                   |
 | `store64`   | Store the value given as second parameter into the pointer that given as first parameter                                              |
+| `load32`    | Return a 32 bit value by dereferecing the pointer given as first parameter                                                            |
 
 ## Control Flow
 
