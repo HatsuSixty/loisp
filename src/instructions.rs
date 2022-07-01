@@ -17,6 +17,8 @@ pub enum LoispError {
     VariableNotFound(LexerToken),
     VariableRedefinition(LexerToken),
     NoDeclarationsInLoops(LexerToken),
+    MemoryRedefinition(LexerToken),
+    MemoryNotFound(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -53,6 +55,16 @@ impl fmt::Display for LoispError {
                 f,
                 "{}: ERROR: Declarations in loops are not allowed",
                 token.location
+            )?,
+            Self::MemoryRedefinition(token) => write!(
+                f,
+                "{}: ERROR: Memory redefinition: `{}`",
+                token.location, token.value.string
+            )?,
+            Self::MemoryNotFound(token) => write!(
+                f,
+                "{}: ERROR: Memory not found: `{}`",
+                token.location, token.value.string
             )?,
         }
         Ok(())
@@ -102,6 +114,8 @@ pub enum LoispInstructionType {
     Store16,
     Load8,
     Store8,
+    Alloc,
+    GetMem,
 }
 
 #[derive(Debug, Clone)]
@@ -156,9 +170,16 @@ pub struct LoispVariable {
     pub value: LoispValue,
 }
 
+#[derive(Debug, Clone)]
+pub struct LoispMemory {
+    pub id: usize,
+    pub alloc: usize,
+}
+
 #[derive(Debug)]
 pub struct LoispContext {
     pub variables: HashMap<String, LoispVariable>,
+    pub memories: HashMap<String, LoispMemory>,
     pub label_count: i64,
 }
 
@@ -166,6 +187,7 @@ impl LoispContext {
     pub fn new() -> LoispContext {
         LoispContext {
             variables: HashMap::new(),
+            memories: HashMap::new(),
             label_count: 0,
         }
     }
@@ -347,6 +369,8 @@ impl LoispInstruction {
             LoispInstructionType::Store16 => Nothing,
             LoispInstructionType::Load8 => Integer,
             LoispInstructionType::Store8 => Nothing,
+            LoispInstructionType::Alloc => Nothing,
+            LoispInstructionType::GetMem => Integer,
         }
     }
 
@@ -587,7 +611,7 @@ impl LoispInstruction {
                     .insert(self.parameters[0].clone().word.unwrap(), variable.clone());
                 ir_push(
                     IrInstruction {
-                        kind: IrInstructionKind::AllocMemory,
+                        kind: IrInstructionKind::AllocVariable,
                         operand: IrInstructionValue::new()
                             .integer(variable.clone().value.size(context) as i64),
                     },
@@ -599,7 +623,7 @@ impl LoispInstruction {
 
                 ir_push(
                     IrInstruction {
-                        kind: IrInstructionKind::PushMemory,
+                        kind: IrInstructionKind::PushVariable,
                         operand: IrInstructionValue::new().integer(variable.clone().id as i64),
                     },
                     ir,
@@ -631,7 +655,7 @@ impl LoispInstruction {
                 {
                     ir_push(
                         IrInstruction {
-                            kind: IrInstructionKind::PushMemory,
+                            kind: IrInstructionKind::PushVariable,
                             operand: IrInstructionValue::new().integer(var.id as i64),
                         },
                         ir,
@@ -685,7 +709,7 @@ impl LoispInstruction {
 
                 ir_push(
                     IrInstruction {
-                        kind: IrInstructionKind::PushMemory,
+                        kind: IrInstructionKind::PushVariable,
                         operand: IrInstructionValue::new().integer(var.id as i64),
                     },
                     ir,
@@ -1024,7 +1048,7 @@ impl LoispInstruction {
                 {
                     ir_push(
                         IrInstruction {
-                            kind: IrInstructionKind::PushMemory,
+                            kind: IrInstructionKind::PushVariable,
                             operand: IrInstructionValue::new().integer(var.id as i64),
                         },
                         ir,
@@ -1235,6 +1259,77 @@ impl LoispInstruction {
                     ir,
                     context,
                 );
+            }
+            Alloc => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word
+                    || self.parameters[1].datatype(context).unwrap() != LoispDatatype::Integer
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                if let Some(_) = context
+                    .memories
+                    .get(&self.parameters[0].clone().word.unwrap())
+                {
+                    return Err(LoispError::MemoryRedefinition(
+                        self.parameters[0].token.clone(),
+                    ));
+                } else {
+                    let memory = LoispMemory {
+                        id: context.memories.len(),
+                        alloc: self.parameters[1].integer.unwrap() as usize,
+                    };
+                    context
+                        .memories
+                        .insert(self.parameters[0].clone().word.unwrap(), memory);
+                }
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::AllocMemory,
+                        operand: IrInstructionValue::new()
+                            .integer(self.parameters[1].integer.unwrap()),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            GetMem => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                if let Some(mem) = context
+                    .memories
+                    .get(&self.parameters[0].clone().word.unwrap())
+                {
+                    ir_push(
+                        IrInstruction {
+                            kind: IrInstructionKind::PushMemory,
+                            operand: IrInstructionValue::new().integer(mem.id as i64),
+                        },
+                        ir,
+                        context,
+                    );
+                } else {
+                    return Err(LoispError::MemoryNotFound(self.parameters[0].token.clone()));
+                }
             }
             Nop => {}
         }

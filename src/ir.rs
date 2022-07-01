@@ -40,7 +40,7 @@ pub enum IrInstructionKind {
     Division,
     Mod,
     Syscall,
-    AllocMemory,
+    AllocVariable,
     Load8,
     Store8,
     Load16,
@@ -49,7 +49,7 @@ pub enum IrInstructionKind {
     Store32,
     Load64,
     Store64,
-    PushMemory,
+    PushVariable,
     Jump,
     Nop,
     If,
@@ -59,6 +59,8 @@ pub enum IrInstructionKind {
     Greater,
     LessEqual,
     GreaterEqual,
+    AllocMemory,
+    PushMemory,
 }
 
 #[derive(Clone)]
@@ -82,19 +84,21 @@ impl IrInstructionValue {
     }
 }
 
-pub struct IrMemory {
+pub struct IrVariable {
     pub ident: usize,
     pub alloc: usize,
 }
 
 pub struct IrContext {
-    pub memories: Vec<IrMemory>,
+    pub variables: Vec<IrVariable>,
+    pub memories: Vec<IrVariable>,
     pub label_count: i64,
 }
 
 impl IrContext {
     pub fn new() -> IrContext {
         IrContext {
+            variables: vec![],
             memories: vec![],
             label_count: 0,
         }
@@ -161,12 +165,27 @@ impl IrInstruction {
                 writeln!(f, "syscall")?;
                 writeln!(f, "push rax")?;
             }
+            AllocVariable => {
+                let variable = IrVariable {
+                    ident: context.variables.len(),
+                    alloc: self.operand.integer as usize,
+                };
+                context.variables.push(variable);
+            }
             AllocMemory => {
-                let memory = IrMemory {
+                let memory = IrVariable {
                     ident: context.memories.len(),
                     alloc: self.operand.integer as usize,
                 };
                 context.memories.push(memory);
+            }
+            PushMemory => {
+                for m in &context.memories {
+                    if m.ident == (self.operand.integer as usize) {
+                        writeln!(f, "push mem_{}", self.operand.integer)?;
+                        break;
+                    }
+                }
             }
             Load8 => {
                 writeln!(f, "pop rax")?;
@@ -212,10 +231,10 @@ impl IrInstruction {
                 writeln!(f, "pop rbx")?;
                 writeln!(f, "mov [rax], rbx")?;
             }
-            PushMemory => {
-                for m in &context.memories {
-                    if m.ident == (self.operand.integer as usize) {
-                        writeln!(f, "push mem_{}", self.operand.integer)?;
+            PushVariable => {
+                for v in &context.variables {
+                    if v.ident == (self.operand.integer as usize) {
+                        writeln!(f, "push var_{}", self.operand.integer)?;
                         break;
                     }
                 }
@@ -377,6 +396,10 @@ impl IrProgram {
         writeln!(f, "mov rdi, 0")?;
         writeln!(f, "syscall")?;
         writeln!(f, "segment readable writable")?;
+
+        for v in &context.variables {
+            writeln!(f, "var_{}: rb {}", v.ident, v.alloc)?;
+        }
 
         for m in &context.memories {
             writeln!(f, "mem_{}: rb {}", m.ident, m.alloc)?;
