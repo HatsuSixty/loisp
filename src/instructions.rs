@@ -93,6 +93,7 @@ pub enum LoispInstructionType {
     GreaterEqual,
     If,
     Block,
+    PtrTo,
 }
 
 #[derive(Debug, Clone)]
@@ -260,6 +261,14 @@ pub fn push_value(
                 ir,
                 context,
             ),
+            Some(LoispDatatype::Pointer) => ir_push(
+                IrInstruction {
+                    kind: IrInstructionKind::PushInteger,
+                    operand: IrInstructionValue::new().integer(p.integer.unwrap()),
+                },
+                ir,
+                context,
+            ),
             Some(LoispDatatype::Word) => {
                 return Err(LoispError::ParserError(ParserError::InvalidSyntax(
                     p.token.clone(),
@@ -321,6 +330,7 @@ impl LoispInstruction {
             LoispInstructionType::Greater => Integer,
             LoispInstructionType::LessEqual => Integer,
             LoispInstructionType::GreaterEqual => Integer,
+            LoispInstructionType::PtrTo => Pointer,
         }
     }
 
@@ -978,6 +988,37 @@ impl LoispInstruction {
                     ir,
                     context,
                 );
+            }
+            PtrTo => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                if let Some(var) = context
+                    .variables
+                    .get(self.parameters[0].word.as_ref().unwrap())
+                {
+                    ir_push(
+                        IrInstruction {
+                            kind: IrInstructionKind::PushMemory,
+                            operand: IrInstructionValue::new().integer(var.id as i64),
+                        },
+                        ir,
+                        context,
+                    );
+                } else {
+                    return Err(LoispError::VariableNotFound(
+                        self.parameters[0].token.clone(),
+                    ));
+                }
             }
             Nop => {}
         }

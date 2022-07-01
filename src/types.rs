@@ -4,6 +4,7 @@ pub enum LoispDatatype {
     String,
     Word,
     Nothing,
+    Pointer,
 }
 
 impl LoispDatatype {
@@ -13,6 +14,7 @@ impl LoispDatatype {
             Self::String => 8,
             Self::Word => 0,
             Self::Nothing => 0,
+            Self::Pointer => 8,
         }
     }
 }

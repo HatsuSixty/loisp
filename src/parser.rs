@@ -60,6 +60,7 @@ pub fn token_to_instruction_kind(token: LexerToken) -> Result<LoispInstructionTy
         ">=" => Ok(LoispInstructionType::GreaterEqual),
         "if" => Ok(LoispInstructionType::If),
         "block" => Ok(LoispInstructionType::Block),
+        "ptrto" => Ok(LoispInstructionType::PtrTo),
         _ => Err(ParserError::UnknownInstruction(token.clone())),
     }
 }
