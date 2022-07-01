@@ -62,6 +62,11 @@ pub enum IrInstructionKind {
     GreaterEqual,
     AllocMemory,
     PushMemory,
+    ShiftLeft,
+    ShiftRight,
+    Or,
+    And,
+    Not,
 }
 
 #[derive(Clone)]
@@ -310,6 +315,35 @@ impl IrInstruction {
                 writeln!(f, "cmp rax, rbx")?;
                 writeln!(f, "cmovge rcx, rdx")?;
                 writeln!(f, "push rcx")?;
+            }
+            ShiftLeft => {
+                writeln!(f, "pop rcx")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "shl rbx, cl")?;
+                writeln!(f, "push rbx")?;
+            }
+            ShiftRight => {
+                writeln!(f, "pop rcx")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "shr rbx, cl")?;
+                writeln!(f, "push rbx")?;
+            }
+            Or => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "or rbx, rax")?;
+                writeln!(f, "push rbx")?;
+            }
+            And => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "pop rbx")?;
+                writeln!(f, "and rbx, rax")?;
+                writeln!(f, "push rbx")?;
+            }
+            Not => {
+                writeln!(f, "pop rax")?;
+                writeln!(f, "not rax")?;
+                writeln!(f, "push rax")?;
             }
             Nop => {}
         }

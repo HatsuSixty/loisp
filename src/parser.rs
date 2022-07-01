@@ -73,6 +73,11 @@ pub fn token_to_instruction_kind(token: LexerToken) -> Result<LoispInstructionTy
         "getmem" => Ok(LoispInstructionType::GetMem),
         "castint" => Ok(LoispInstructionType::CastInt),
         "castptr" => Ok(LoispInstructionType::CastPointer),
+        "&" => Ok(LoispInstructionType::And),
+        "!" => Ok(LoispInstructionType::Not),
+        "|" => Ok(LoispInstructionType::Or),
+        "<<" => Ok(LoispInstructionType::ShiftLeft),
+        ">>" => Ok(LoispInstructionType::ShiftRight),
         _ => Err(ParserError::UnknownInstruction(token.clone())),
     }
 }

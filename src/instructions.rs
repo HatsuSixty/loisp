@@ -118,6 +118,11 @@ pub enum LoispInstructionType {
     GetMem,
     CastPointer,
     CastInt,
+    ShiftLeft,
+    ShiftRight,
+    Or,
+    And,
+    Not,
 }
 
 #[derive(Debug, Clone)]
@@ -375,6 +380,11 @@ impl LoispInstruction {
             LoispInstructionType::GetMem => Integer,
             LoispInstructionType::CastInt => Integer,
             LoispInstructionType::CastPointer => Pointer,
+            LoispInstructionType::ShiftLeft => Integer,
+            LoispInstructionType::ShiftRight => Integer,
+            LoispInstructionType::Or => Integer,
+            LoispInstructionType::And => Integer,
+            LoispInstructionType::Not => Integer,
         }
     }
 
@@ -1356,6 +1366,134 @@ impl LoispInstruction {
                 }
 
                 self.push_parameters(ir, context, true)?;
+            }
+            ShiftLeft => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer
+                    || self.parameters[1].datatype(context).unwrap() != LoispDatatype::Integer
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                self.push_parameters(ir, context, true)?;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::ShiftLeft,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            ShiftRight => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer
+                    || self.parameters[1].datatype(context).unwrap() != LoispDatatype::Integer
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                self.push_parameters(ir, context, true)?;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::ShiftRight,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            And => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer
+                    || self.parameters[1].datatype(context).unwrap() != LoispDatatype::Integer
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                self.push_parameters(ir, context, true)?;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::And,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            Or => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer
+                    || self.parameters[1].datatype(context).unwrap() != LoispDatatype::Integer
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                self.push_parameters(ir, context, true)?;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Or,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            Not => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                self.push_parameters(ir, context, true)?;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Not,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
             }
             Nop => {}
         }
