@@ -39,6 +39,15 @@ The available instructios are the following:
 | `while`     | Keeps executing the instructions given as parameters until the first parameter (condition) returns 0                                  |
 | `if`        | Use the first parameter as a condition, if the condition returns 1, it executes the block given as 1st parameter, else the 2nd one    |
 | `block`     | Just executes all the instructions given as parameters                                                                                |
+| `=`         | Compare 2 parameters and return 1 if they are equal                                                                                   |
+| `!=`        | Compare 2 parameters and return 1 if they are not equal                                                                               |
+| `<`         | Compare 2 parameters and return 1 if the first is less than the second                                                                |
+| `>`         | Compare 2 parameters and return 1 if the first is greater than the second                                                             |
+| `<=`        | Compare 2 parameters and return 1 if the first is less than the second or if they are equal                                           |
+| `>=`        | Compare 2 parameters and return 1 if the first is greater than the second or if they are equal                                        |
+| `ptrto`     | Return a pointer to the variable that has the name given as first parameter                                                           |
+| `load64`    | Return a value by dereferecing the pointer given as first parameter                                                                   |
+
 ## Control Flow
 
 ### Conditions:
