@@ -116,6 +116,8 @@ pub enum LoispInstructionType {
     Store8,
     Alloc,
     GetMem,
+    CastPointer,
+    CastInt,
 }
 
 #[derive(Debug, Clone)]
@@ -371,6 +373,8 @@ impl LoispInstruction {
             LoispInstructionType::Store8 => Nothing,
             LoispInstructionType::Alloc => Nothing,
             LoispInstructionType::GetMem => Integer,
+            LoispInstructionType::CastInt => Integer,
+            LoispInstructionType::CastPointer => Pointer,
         }
     }
 
@@ -1330,6 +1334,28 @@ impl LoispInstruction {
                 } else {
                     return Err(LoispError::MemoryNotFound(self.parameters[0].token.clone()));
                 }
+            }
+            CastPointer => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                self.push_parameters(ir, context, true)?;
+            }
+            CastInt => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                self.push_parameters(ir, context, true)?;
             }
             Nop => {}
         }

@@ -23,9 +23,10 @@ pub fn syscall_number_as_register(n: i64) -> String {
         0 => "rax".to_string(),
         1 => "rdi".to_string(),
         2 => "rsi".to_string(),
-        3 => "r10".to_string(),
-        4 => "r8".to_string(),
-        5 => "r9".to_string(),
+        3 => "rdx".to_string(),
+        4 => "r10".to_string(),
+        5 => "r8".to_string(),
+        6 => "r9".to_string(),
         _ => "invalid".to_string(),
     }
 }
@@ -182,7 +183,8 @@ impl IrInstruction {
             PushMemory => {
                 for m in &context.memories {
                     if m.ident == (self.operand.integer as usize) {
-                        writeln!(f, "push mem_{}", self.operand.integer)?;
+                        writeln!(f, "mov rax, mem_{}", self.operand.integer)?;
+                        writeln!(f, "push rax")?;
                         break;
                     }
                 }
