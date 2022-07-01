@@ -95,6 +95,7 @@ pub enum LoispInstructionType {
     Block,
     PtrTo,
     Load64,
+    Store64,
 }
 
 #[derive(Debug, Clone)]
@@ -333,6 +334,7 @@ impl LoispInstruction {
             LoispInstructionType::GreaterEqual => Integer,
             LoispInstructionType::PtrTo => Pointer,
             LoispInstructionType::Load64 => Integer,
+            LoispInstructionType::Store64 => Nothing,
         }
     }
 
@@ -1040,6 +1042,32 @@ impl LoispInstruction {
                 ir_push(
                     IrInstruction {
                         kind: IrInstructionKind::Load64,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            Store64 => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Pointer
+                    || self.parameters[1].datatype(context).unwrap() != LoispDatatype::Integer
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                self.push_parameters(ir, context, true)?;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Store64,
                         operand: IrInstructionValue::new(),
                     },
                     ir,
