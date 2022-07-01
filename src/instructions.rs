@@ -99,6 +99,7 @@ pub enum LoispInstructionType {
     Load32,
     Store32,
     Load16,
+    Store16,
 }
 
 #[derive(Debug, Clone)]
@@ -341,6 +342,7 @@ impl LoispInstruction {
             LoispInstructionType::Load32 => Integer,
             LoispInstructionType::Store32 => Nothing,
             LoispInstructionType::Load16 => Integer,
+            LoispInstructionType::Store16 => Nothing,
         }
     }
 
@@ -1148,6 +1150,32 @@ impl LoispInstruction {
                 ir_push(
                     IrInstruction {
                         kind: IrInstructionKind::Load16,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                    context,
+                );
+            }
+            Store16 => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Pointer
+                    || self.parameters[1].datatype(context).unwrap() != LoispDatatype::Integer
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                self.push_parameters(ir, context, true)?;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Store16,
                         operand: IrInstructionValue::new(),
                     },
                     ir,
