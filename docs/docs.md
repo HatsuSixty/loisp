@@ -54,6 +54,8 @@ The available instructios are the following:
 | `store16`   | Store a 16 bit value given as second parameter into the pointer that was given as first parameter                                     |
 | `load8`     | Return a 8 bit value by dereferecing the pointer given as first parameter                                                             |
 | `store8`    | Store a 8 bit value given as second parameter into the pointer that was given as first parameter                                      |
+| `alloc`     | Allocate a memory buffer with the capacity given as second parameter and give it a name (first parameter)                             |
+| `getmem`    | Return a pointer to a memory buffer that has the name given as first parameter                                                        |
 
 ## Control Flow
 
