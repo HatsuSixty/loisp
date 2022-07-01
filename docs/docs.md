@@ -50,6 +50,7 @@ The available instructios are the following:
 | `store64`   | Store the value given as second parameter into the pointer that was given as first parameter                                          |
 | `load32`    | Return a 32 bit value by dereferecing the pointer given as first parameter                                                            |
 | `store32`   | Store a 32 bit value given as second parameter into the pointer that was given as first parameter                                     |
+| `load16`    | Return a 16 bit value by dereferecing the pointer given as first parameter                                                            |
 
 ## Control Flow
 
