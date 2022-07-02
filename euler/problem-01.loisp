@@ -1,0 +1,14 @@
+(macro N 1000)
+
+(setvar acc 0)
+
+(setvar i 0)
+(while (<(getvar i)(expand N))
+  (if (|(=(%(getvar i)3)0)(=(%(getvar i)5)0))
+    (chvar acc(+(getvar acc)(getvar i)))
+    (block)
+  )
+  (chvar i (+(getvar i)1))
+)
+
+(print (getvar acc))

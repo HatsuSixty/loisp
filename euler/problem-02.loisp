@@ -1,0 +1,19 @@
+(macro N 4000000)
+
+(setvar a 1)
+(setvar b 2)
+(setvar sum 1)
+(setvar acc 2)
+
+(while (<(getvar sum)(expand N))
+  (chvar sum(+(getvar a)(getvar b)))
+  (chvar a (getvar b))
+  (chvar b (getvar sum))
+
+  (if (=(%(getvar sum)2)0)
+    (chvar acc (+(getvar acc)(getvar b)))
+    (block)
+  )
+)
+
+(print (getvar acc))
