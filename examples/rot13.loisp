@@ -1,0 +1,14 @@
+(setvar b 65)
+
+(if (= (getvar b) 32)
+  (block)
+  (if (&(>=(getvar b)65)(<=(getvar b)90))
+    (chvar b (+ 65 (% (+ (- (getvar b) 65) 13) 26)))
+    (if (&(>=(getvar b)97)(<=(getvar b)122))
+      (chvar b (+ 65 (% (+ (- (getvar b) 65) 13) 26)))
+      (block)
+    )
+  )
+)
+
+(syscall 1 1 (castint (ptrto b)) 1)
