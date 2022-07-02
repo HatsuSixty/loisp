@@ -377,7 +377,7 @@ impl LoispInstruction {
             LoispInstructionType::Load8 => Integer,
             LoispInstructionType::Store8 => Nothing,
             LoispInstructionType::Alloc => Nothing,
-            LoispInstructionType::GetMem => Integer,
+            LoispInstructionType::GetMem => Pointer,
             LoispInstructionType::CastInt => Integer,
             LoispInstructionType::CastPointer => Pointer,
             LoispInstructionType::ShiftLeft => Integer,
@@ -1408,7 +1408,7 @@ impl LoispInstruction {
                     return Err(LoispError::MismatchedTypes(self.token.clone()));
                 }
 
-                self.push_parameters(ir, context, true)?;
+                self.push_parameters(ir, context, false)?;
 
                 ir_push(
                     IrInstruction {
