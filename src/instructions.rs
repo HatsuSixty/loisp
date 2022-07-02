@@ -22,6 +22,7 @@ pub enum LoispError {
     MemoryNotFound(LexerToken),
     CantEvaluateAtCompileTime(LexerToken),
     MacroNotFound(LexerToken),
+    MacroRedefinition(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -82,6 +83,11 @@ impl fmt::Display for LoispError {
             Self::MacroNotFound(token) => write!(
                 f,
                 "{}: ERROR: Macro not found: `{}`",
+                token.location, token.value.string
+            )?,
+            Self::MacroRedefinition(token) => write!(
+                f,
+                "{}: ERROR: Macro redefinition: `{}`",
                 token.location, token.value.string
             )?,
         }
@@ -1575,6 +1581,15 @@ impl LoispInstruction {
 
                 if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
                     return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                if let Some(_) = context
+                    .macros
+                    .get(&self.parameters[0].clone().word.unwrap())
+                {
+                    return Err(LoispError::MacroRedefinition(
+                        self.parameters[0].token.clone(),
+                    ));
                 }
 
                 let mut ops = IrProgram::new();
