@@ -1,0 +1,19 @@
+(setvar n 100)
+(setvar i 0)
+
+(setvar t0 0)
+(setvar t1 1)
+(setvar next (+(getvar t0)(getvar t1)))
+
+(print (getvar t0))
+(print (getvar t1))
+
+(chvar i 3)
+(while (<=(getvar i)(getvar n))
+  (print(getvar next))
+  (chvar t0 (getvar t1))
+  (chvar t1 (getvar next))
+  (chvar next (+(getvar t0)(getvar t1)))
+
+  (chvar i(+(getvar i)1))
+)
