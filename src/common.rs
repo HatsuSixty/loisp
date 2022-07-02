@@ -40,8 +40,22 @@ pub fn run_command_with_info(cmd: String, config: Config) -> io::Result<()> {
     }
     shell_cmd.stderr(Stdio::inherit());
 
-    shell_cmd
+    let status = shell_cmd
         .status()
         .expect(format!("Command {} failed to execute", cmd).as_str());
+
+    match status.code() {
+        Some(code) => {
+            if code != 0 {
+                print_info!("ERROR", "Command exited with `{}` exit code", code);
+                std::process::exit(code);
+            }
+        }
+        None => {
+            print_info!("ERROR", "Command exited with signal");
+            std::process::exit(1);
+        }
+    }
+
     Ok(())
 }
