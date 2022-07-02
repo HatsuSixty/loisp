@@ -1,0 +1,9 @@
+(setvar n 10)
+
+(setvar acc 1)
+(while (>(getvar n)0)
+  (chvar acc (* (getvar acc) (getvar n)))
+  (chvar n (- (getvar n) 1))
+)
+
+(print (getvar acc))
