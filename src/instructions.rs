@@ -19,6 +19,7 @@ pub enum LoispError {
     NoDeclarationsInLoops(LexerToken),
     MemoryRedefinition(LexerToken),
     MemoryNotFound(LexerToken),
+    CantEvaluateAtCompileTime(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -64,6 +65,11 @@ impl fmt::Display for LoispError {
             Self::MemoryNotFound(token) => write!(
                 f,
                 "{}: ERROR: Memory not found: `{}`",
+                token.location, token.value.string
+            )?,
+            Self::CantEvaluateAtCompileTime(token) => write!(
+                f,
+                "{}: ERROR: Can't evaluate expression given as parameter for `{}` at compile time",
                 token.location, token.value.string
             )?,
         }
@@ -760,7 +766,9 @@ impl LoispInstruction {
                     parameters.remove(0);
                     for p in parameters {
                         if p.is_instruction_return() {
-                            if p.instruction_return.kind == LoispInstructionType::SetVar {
+                            if p.instruction_return.kind == LoispInstructionType::SetVar
+                                || p.instruction_return.kind == LoispInstructionType::Alloc
+                            {
                                 return Err(LoispError::NoDeclarationsInLoops(p.token));
                             }
                         }
@@ -1297,10 +1305,15 @@ impl LoispInstruction {
                         self.parameters[0].token.clone(),
                     ));
                 } else {
+                    if self.parameters[1].is_instruction_return() {
+                        return Err(LoispError::CantEvaluateAtCompileTime(self.token.clone()));
+                    }
+
                     let memory = LoispMemory {
                         id: context.memories.len(),
                         alloc: self.parameters[1].integer.unwrap() as usize,
                     };
+
                     context
                         .memories
                         .insert(self.parameters[0].clone().word.unwrap(), memory);
