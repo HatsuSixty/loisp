@@ -61,6 +61,8 @@ The available instructios are the following:
 | `&`                 | Perform the 'and' operation in the parameters and return the result                                                                   |
 | <code>&#124;</code> | Perform the 'or' operation in the parameters and return the result                                                                    |
 | `!`                 | Perform the 'not' operation in the parameters and return the result                                                                   |
+| `macro`             | Create a macro with a body that contains the instructions given as parameters                                                         |
+| `expand`            | Expand the macro that has the name given as parameter                                                                                 |
 
 ## Control Flow
 
