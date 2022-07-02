@@ -99,7 +99,7 @@ Output:
 ```lisp
 (setvar x 0)
 
-(while (ne (getvar x) 10)
+(while (!= (getvar x) 10)
   (print (getvar x))
   (chvar x (+(getvar x)1))
 )
