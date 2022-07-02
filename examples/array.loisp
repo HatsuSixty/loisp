@@ -1,0 +1,13 @@
+(alloc array 10)
+
+(setvar i 0)
+(while (<(getvar i)10)
+  (store8 (castptr(+(castint(getmem array))(getvar i)))(getvar i))
+  (chvar i (+(getvar i)1))
+)
+
+(chvar i 0)
+(while (<(getvar i)10)
+  (print(load8(castptr(+(castint(getmem array))(getvar i)))))
+  (chvar i (+(getvar i)1))
+)
