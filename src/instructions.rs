@@ -23,6 +23,7 @@ pub enum LoispError {
     CantEvaluateAtCompileTime(LexerToken),
     MacroNotFound(LexerToken),
     MacroRedefinition(LexerToken),
+    NoJumpsInMacros(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -89,6 +90,11 @@ impl fmt::Display for LoispError {
                 f,
                 "{}: ERROR: Macro redefinition: `{}`",
                 token.location, token.value.string
+            )?,
+            Self::NoJumpsInMacros(token) => write!(
+                f,
+                "{}: ERROR: Macros should not contain instructions that perform jumps",
+                token.location
             )?,
         }
         Ok(())
@@ -1547,6 +1553,12 @@ impl LoispInstruction {
                             }
                         }
                         push_value(p.clone(), &mut ops, context)?;
+                    }
+                }
+
+                for i in &ops.instructions {
+                    if i.kind == IrInstructionKind::Jump {
+                        return Err(LoispError::NoJumpsInMacros(self.token.clone()));
                     }
                 }
 

@@ -31,7 +31,7 @@ pub fn syscall_number_as_register(n: i64) -> String {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum IrInstructionKind {
     Print,
     PushInteger,
