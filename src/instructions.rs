@@ -20,6 +20,7 @@ pub enum LoispError {
     MemoryRedefinition(LexerToken),
     MemoryNotFound(LexerToken),
     CantEvaluateAtCompileTime(LexerToken),
+    MacroNotFound(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -70,6 +71,11 @@ impl fmt::Display for LoispError {
             Self::CantEvaluateAtCompileTime(token) => write!(
                 f,
                 "{}: ERROR: Can't evaluate expression given as parameter for `{}` at compile time",
+                token.location, token.value.string
+            )?,
+            Self::MacroNotFound(token) => write!(
+                f,
+                "{}: ERROR: Macro not found: `{}`",
                 token.location, token.value.string
             )?,
         }
@@ -129,6 +135,8 @@ pub enum LoispInstructionType {
     Or,
     And,
     Not,
+    Macro,
+    Expand,
 }
 
 #[derive(Debug, Clone)]
@@ -178,6 +186,12 @@ impl LoispValue {
 }
 
 #[derive(Debug, Clone)]
+pub struct LoispMacro {
+    pub id: usize,
+    pub program: IrProgram,
+}
+
+#[derive(Debug, Clone)]
 pub struct LoispVariable {
     pub id: usize,
     pub value: LoispValue,
@@ -194,6 +208,7 @@ pub struct LoispContext {
     pub variables: HashMap<String, LoispVariable>,
     pub memories: HashMap<String, LoispMemory>,
     pub label_count: i64,
+    pub macros: HashMap<String, LoispMacro>,
 }
 
 impl LoispContext {
@@ -202,6 +217,7 @@ impl LoispContext {
             variables: HashMap::new(),
             memories: HashMap::new(),
             label_count: 0,
+            macros: HashMap::new(),
         }
     }
 }
@@ -391,6 +407,44 @@ impl LoispInstruction {
             LoispInstructionType::Or => Integer,
             LoispInstructionType::And => Integer,
             LoispInstructionType::Not => Integer,
+            LoispInstructionType::Macro => Nothing,
+            LoispInstructionType::Expand => {
+                let maccro = context
+                    .macros
+                    .get(self.parameters[0].word.as_ref().unwrap());
+                if maccro.is_none() {
+                    return Nothing;
+                } else {
+                    if let Some(last) = maccro.unwrap().program.instructions.last() {
+                        match last.kind {
+                            IrInstructionKind::PushMemory => return Pointer,
+                            IrInstructionKind::PushInteger => return Integer,
+                            IrInstructionKind::Plus => return Integer,
+                            IrInstructionKind::Minus => return Integer,
+                            IrInstructionKind::Multiplication => return Integer,
+                            IrInstructionKind::Division => return Integer,
+                            IrInstructionKind::ShiftLeft => return Integer,
+                            IrInstructionKind::ShiftRight => return Integer,
+                            IrInstructionKind::And => return Integer,
+                            IrInstructionKind::Or => return Integer,
+                            IrInstructionKind::Not => return Integer,
+                            IrInstructionKind::Load8 => return Integer,
+                            IrInstructionKind::Load16 => return Integer,
+                            IrInstructionKind::Load32 => return Integer,
+                            IrInstructionKind::Load64 => return Integer,
+                            IrInstructionKind::GreaterEqual => return Integer,
+                            IrInstructionKind::LessEqual => return Integer,
+                            IrInstructionKind::Greater => return Integer,
+                            IrInstructionKind::Less => return Integer,
+                            IrInstructionKind::Equal => return Integer,
+                            IrInstructionKind::NotEqual => return Integer,
+                            _ => return Nothing,
+                        }
+                    } else {
+                        return Nothing;
+                    }
+                }
+            }
         }
     }
 
@@ -1507,6 +1561,57 @@ impl LoispInstruction {
                     ir,
                     context,
                 );
+            }
+            Macro => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                let mut ops = IrProgram::new();
+                {
+                    let mut params = self.parameters.clone();
+                    params.remove(0);
+                    for p in params {
+                        push_value(p.clone(), &mut ops, context)?;
+                    }
+                }
+
+                let maccro = LoispMacro {
+                    id: context.macros.len(),
+                    program: ops.clone(),
+                };
+
+                context
+                    .macros
+                    .insert(self.parameters[0].clone().word.unwrap(), maccro);
+            }
+            Expand => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                if let Some(mac) = context
+                    .macros
+                    .get(&self.parameters[0].clone().word.unwrap())
+                {
+                    for i in &mac.clone().program.instructions {
+                        ir_push(i.clone(), ir, context);
+                    }
+                } else {
+                    return Err(LoispError::MacroNotFound(self.parameters[0].token.clone()));
+                }
             }
             Nop => {}
         }

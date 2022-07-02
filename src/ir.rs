@@ -31,7 +31,7 @@ pub fn syscall_number_as_register(n: i64) -> String {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum IrInstructionKind {
     Print,
     PushInteger,
@@ -69,7 +69,7 @@ pub enum IrInstructionKind {
     Not,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct IrInstructionValue {
     string: String,
@@ -111,6 +111,7 @@ impl IrContext {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct IrInstruction {
     pub kind: IrInstructionKind,
     pub operand: IrInstructionValue,
@@ -352,6 +353,7 @@ impl IrInstruction {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct IrProgram {
     pub instructions: Vec<IrInstruction>,
 }
