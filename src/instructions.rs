@@ -219,7 +219,6 @@ pub struct LoispMemory {
 pub struct LoispContext {
     pub variables: HashMap<String, LoispVariable>,
     pub memories: HashMap<String, LoispMemory>,
-    pub label_count: i64,
     pub macros: HashMap<String, LoispMacro>,
 }
 
@@ -228,13 +227,12 @@ impl LoispContext {
         LoispContext {
             variables: HashMap::new(),
             memories: HashMap::new(),
-            label_count: 0,
             macros: HashMap::new(),
         }
     }
 }
 
-pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram, context: &mut LoispContext) {
+pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram) {
     match s {
         1 => ir_push(
             IrInstruction {
@@ -242,7 +240,6 @@ pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram, context: &m
                 operand: IrInstructionValue::new(),
             },
             ir,
-            context,
         ),
         2 => ir_push(
             IrInstruction {
@@ -250,7 +247,6 @@ pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram, context: &m
                 operand: IrInstructionValue::new(),
             },
             ir,
-            context,
         ),
         4 => ir_push(
             IrInstruction {
@@ -258,7 +254,6 @@ pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram, context: &m
                 operand: IrInstructionValue::new(),
             },
             ir,
-            context,
         ),
         8 => ir_push(
             IrInstruction {
@@ -266,13 +261,12 @@ pub fn value_size_as_store_instruction(s: usize, ir: &mut IrProgram, context: &m
                 operand: IrInstructionValue::new(),
             },
             ir,
-            context,
         ),
         _ => panic!("unreachable"),
     }
 }
 
-pub fn value_size_as_load_instruction(s: usize, ir: &mut IrProgram, context: &mut LoispContext) {
+pub fn value_size_as_load_instruction(s: usize, ir: &mut IrProgram) {
     match s {
         1 => ir_push(
             IrInstruction {
@@ -280,7 +274,6 @@ pub fn value_size_as_load_instruction(s: usize, ir: &mut IrProgram, context: &mu
                 operand: IrInstructionValue::new(),
             },
             ir,
-            context,
         ),
         2 => ir_push(
             IrInstruction {
@@ -288,7 +281,6 @@ pub fn value_size_as_load_instruction(s: usize, ir: &mut IrProgram, context: &mu
                 operand: IrInstructionValue::new(),
             },
             ir,
-            context,
         ),
         4 => ir_push(
             IrInstruction {
@@ -296,7 +288,6 @@ pub fn value_size_as_load_instruction(s: usize, ir: &mut IrProgram, context: &mu
                 operand: IrInstructionValue::new(),
             },
             ir,
-            context,
         ),
         8 => ir_push(
             IrInstruction {
@@ -304,15 +295,13 @@ pub fn value_size_as_load_instruction(s: usize, ir: &mut IrProgram, context: &mu
                 operand: IrInstructionValue::new(),
             },
             ir,
-            context,
         ),
         _ => panic!("unreachable"),
     }
 }
 
-pub fn ir_push(inst: IrInstruction, ir: &mut IrProgram, context: &mut LoispContext) {
+pub fn ir_push(inst: IrInstruction, ir: &mut IrProgram) {
     ir.push(inst);
-    context.label_count += 1;
 }
 
 pub fn push_value(
@@ -330,7 +319,6 @@ pub fn push_value(
                     operand: IrInstructionValue::new().integer(p.integer.unwrap()),
                 },
                 ir,
-                context,
             ),
             Some(LoispDatatype::Pointer) => ir_push(
                 IrInstruction {
@@ -338,7 +326,6 @@ pub fn push_value(
                     operand: IrInstructionValue::new().integer(p.integer.unwrap()),
                 },
                 ir,
-                context,
             ),
             Some(LoispDatatype::Word) => {
                 return Err(LoispError::ParserError(ParserError::InvalidSyntax(
@@ -506,7 +493,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Plus => {
@@ -531,7 +517,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Minus => {
@@ -556,7 +541,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Multiplication => {
@@ -581,7 +565,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Division => {
@@ -606,7 +589,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Mod => {
@@ -631,7 +613,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Syscall => {
@@ -656,7 +637,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new().integer(self.parameters.len() as i64),
                     },
                     ir,
-                    context,
                 );
             }
             SetVar => {
@@ -702,7 +682,6 @@ impl LoispInstruction {
                             .integer(variable.clone().value.size(context) as i64),
                     },
                     ir,
-                    context,
                 );
 
                 push_value(self.parameters.clone().last().unwrap().clone(), ir, context)?;
@@ -713,12 +692,10 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new().integer(variable.clone().id as i64),
                     },
                     ir,
-                    context,
                 );
                 value_size_as_store_instruction(
                     variable.clone().value.datatype(context).unwrap().size(),
                     ir,
-                    context,
                 );
             }
             GetVar => {
@@ -745,9 +722,8 @@ impl LoispInstruction {
                             operand: IrInstructionValue::new().integer(var.id as i64),
                         },
                         ir,
-                        context,
                     );
-                    value_size_as_load_instruction(var.value.clone().size(context), ir, context);
+                    value_size_as_load_instruction(var.value.clone().size(context), ir);
                 } else {
                     return Err(LoispError::VariableNotFound(
                         self.parameters[0].token.clone(),
@@ -799,16 +775,14 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new().integer(var.id as i64),
                     },
                     ir,
-                    context,
                 );
                 value_size_as_store_instruction(
                     var.clone().value.datatype(context).unwrap().size(),
                     ir,
-                    context,
                 );
             }
             While => {
-                let loop_begin = context.label_count;
+                let loop_begin = ir.instructions.len() as i64;
 
                 if self.parameters.len() < 2 {
                     return Err(LoispError::NotEnoughParameters(self.token.clone()));
@@ -816,7 +790,7 @@ impl LoispInstruction {
 
                 push_value(self.parameters[0].clone(), ir, context)?;
 
-                let if_addr = context.label_count;
+                let if_addr = ir.instructions.len();
 
                 ir_push(
                     IrInstruction {
@@ -824,7 +798,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
 
                 {
@@ -848,10 +821,9 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new().integer(loop_begin),
                     },
                     ir,
-                    context,
                 );
 
-                let after_end = context.label_count;
+                let after_end = ir.instructions.len() as i64;
                 ir.instructions[if_addr as usize].operand =
                     IrInstructionValue::new().integer(after_end + 1);
 
@@ -861,7 +833,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
                 ir_push(
                     IrInstruction {
@@ -869,7 +840,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Equal => {
@@ -897,7 +867,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             NotEqual => {
@@ -925,7 +894,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             If => {
@@ -943,7 +911,7 @@ impl LoispInstruction {
 
                 push_value(self.parameters[0].clone(), ir, context)?;
 
-                let if_addr = context.label_count;
+                let if_addr = ir.instructions.len() as i64;
 
                 ir_push(
                     IrInstruction {
@@ -951,22 +919,20 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
 
                 push_value(self.parameters[1].clone(), ir, context)?;
 
-                let else_addr = context.label_count;
+                let else_addr = ir.instructions.len() as i64;
                 ir_push(
                     IrInstruction {
                         kind: IrInstructionKind::Jump,
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
 
-                let after_else = context.label_count;
+                let after_else = ir.instructions.len() as i64;
                 ir.instructions[if_addr as usize].operand =
                     IrInstructionValue::new().integer(after_else + 1);
 
@@ -976,7 +942,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
                 ir_push(
                     IrInstruction {
@@ -984,12 +949,11 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
 
                 push_value(self.parameters[2].clone(), ir, context)?;
 
-                let after_end = context.label_count;
+                let after_end = ir.instructions.len() as i64;
                 ir.instructions[else_addr as usize].operand =
                     IrInstructionValue::new().integer(after_end + 1);
 
@@ -999,7 +963,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
                 ir_push(
                     IrInstruction {
@@ -1007,7 +970,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Block => {
@@ -1036,7 +998,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Greater => {
@@ -1062,7 +1023,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             LessEqual => {
@@ -1088,7 +1048,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             GreaterEqual => {
@@ -1114,7 +1073,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             PtrTo => {
@@ -1140,7 +1098,6 @@ impl LoispInstruction {
                             operand: IrInstructionValue::new().integer(var.id as i64),
                         },
                         ir,
-                        context,
                     );
                 } else {
                     return Err(LoispError::VariableNotFound(
@@ -1169,7 +1126,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Store64 => {
@@ -1195,7 +1151,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Load32 => {
@@ -1219,7 +1174,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Store32 => {
@@ -1245,7 +1199,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Load16 => {
@@ -1269,7 +1222,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Store16 => {
@@ -1295,7 +1247,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Load8 => {
@@ -1319,7 +1270,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Store8 => {
@@ -1345,7 +1295,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Alloc => {
@@ -1392,7 +1341,6 @@ impl LoispInstruction {
                             .integer(self.parameters[1].integer.unwrap()),
                     },
                     ir,
-                    context,
                 );
             }
             GetMem => {
@@ -1418,7 +1366,6 @@ impl LoispInstruction {
                             operand: IrInstructionValue::new().integer(mem.id as i64),
                         },
                         ir,
-                        context,
                     );
                 } else {
                     return Err(LoispError::MemoryNotFound(self.parameters[0].token.clone()));
@@ -1469,7 +1416,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             ShiftRight => {
@@ -1495,7 +1441,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             And => {
@@ -1521,7 +1466,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Or => {
@@ -1547,7 +1491,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Not => {
@@ -1571,7 +1514,6 @@ impl LoispInstruction {
                         operand: IrInstructionValue::new(),
                     },
                     ir,
-                    context,
                 );
             }
             Macro => {
@@ -1635,7 +1577,7 @@ impl LoispInstruction {
                     .get(&self.parameters[0].clone().word.unwrap())
                 {
                     for i in &mac.clone().program.instructions {
-                        ir_push(i.clone(), ir, context);
+                        ir_push(i.clone(), ir);
                     }
                 } else {
                     return Err(LoispError::MacroNotFound(self.parameters[0].token.clone()));
