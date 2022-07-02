@@ -1,0 +1,3 @@
+(alloc read 255)
+(syscall 0 0 (castint (getmem read)) 255)
+(syscall 1 1 (castint (getmem read)) 255)
