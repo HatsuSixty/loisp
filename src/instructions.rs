@@ -17,6 +17,7 @@ pub enum LoispError {
     VariableNotFound(LexerToken),
     VariableRedefinition(LexerToken),
     NoDeclarationsInLoops(LexerToken),
+    NoDeclarationsInMacros(LexerToken),
     MemoryRedefinition(LexerToken),
     MemoryNotFound(LexerToken),
     CantEvaluateAtCompileTime(LexerToken),
@@ -56,6 +57,11 @@ impl fmt::Display for LoispError {
             Self::NoDeclarationsInLoops(token) => write!(
                 f,
                 "{}: ERROR: Declarations in loops are not allowed",
+                token.location
+            )?,
+            Self::NoDeclarationsInMacros(token) => write!(
+                f,
+                "{}: ERROR: Declarations inside macros are not allowed",
                 token.location
             )?,
             Self::MemoryRedefinition(token) => write!(
@@ -1576,6 +1582,13 @@ impl LoispInstruction {
                     let mut params = self.parameters.clone();
                     params.remove(0);
                     for p in params {
+                        if p.is_instruction_return() {
+                            if p.instruction_return.kind == LoispInstructionType::SetVar
+                                || p.instruction_return.kind == LoispInstructionType::Alloc
+                            {
+                                return Err(LoispError::NoDeclarationsInMacros(p.token));
+                            }
+                        }
                         push_value(p.clone(), &mut ops, context)?;
                     }
                 }
