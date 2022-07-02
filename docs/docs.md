@@ -56,6 +56,11 @@ The available instructios are the following:
 | `store8`    | Store a 8 bit value given as second parameter into the pointer that was given as first parameter                                      |
 | `alloc`     | Allocate a memory buffer with the capacity given as second parameter and give it a name (first parameter)                             |
 | `getmem`    | Return a pointer to a memory buffer that has the name given as first parameter                                                        |
+| `<<`        | Perform the 'shift left' operation in the parameters and return the result                                                            |
+| `>>`        | Perform the 'shift right' operation in the parameters and return the result                                                           |
+| `&`         | Perform the 'and' operation in the parameters and return the result                                                                   |
+| `|`         | Perform the 'or' operation in the parameters and return the result                                                                    |
+| `!`         | Perform the 'not' operation in the parameters and return the result                                                                   |
 
 ## Control Flow
 
