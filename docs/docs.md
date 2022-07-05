@@ -63,6 +63,7 @@ The available instructios are the following:
 | `!`                 | Perform the 'not' operation in the parameters and return the result                                                                   |
 | `macro`             | Create a macro with a body that contains the instructions given as parameters                                                         |
 | `expand`            | Expand the macro that has the name given as parameter                                                                                 |
+| `pop`               | Pop an element from the runtime stack and store it in the variable that has the name given as first parameter                         |
 
 ## Control Flow
 

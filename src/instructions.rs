@@ -155,6 +155,7 @@ pub enum LoispInstructionType {
     Not,
     Macro,
     Expand,
+    Pop,
 }
 
 #[derive(Debug, Clone)]
@@ -450,6 +451,7 @@ impl LoispInstruction {
                     }
                 }
             }
+            LoispInstructionType::Pop => Nothing,
         }
     }
 
@@ -1593,6 +1595,43 @@ impl LoispInstruction {
                     }
                 } else {
                     return Err(LoispError::MacroNotFound(self.parameters[0].token.clone()));
+                }
+            }
+            Pop => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                if let Some(var) = context
+                    .variables
+                    .get(&self.parameters[0].clone().word.unwrap())
+                {
+                    ir_push(
+                        IrInstruction {
+                            kind: IrInstructionKind::PushVariable,
+                            operand: IrInstructionValue::new().integer(var.id as i64),
+                        },
+                        ir,
+                    );
+                    ir_push(
+                        IrInstruction {
+                            kind: IrInstructionKind::Store64,
+                            operand: IrInstructionValue::new(),
+                        },
+                        ir,
+                    );
+                } else {
+                    return Err(LoispError::VariableNotFound(
+                        self.parameters[0].token.clone(),
+                    ));
                 }
             }
             Nop => {}
