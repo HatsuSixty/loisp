@@ -363,7 +363,7 @@ impl IrInstruction {
                 let ident = context.strings.len();
                 context.strings.push(IrString {
                     ident: ident,
-                    string: self.operand.string.clone(),
+                    string: escape_string(self.operand.string.clone()),
                 });
                 writeln!(f, "push str_{}", ident)?;
             }

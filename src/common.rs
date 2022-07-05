@@ -22,6 +22,14 @@ pub fn file_name_without_extension(f: String) -> String {
     f.as_str().replace(input_file_extension.as_str().trim(), "")
 }
 
+pub fn escape_string(string: String) -> String {
+    return string
+        .replace("\\n", "\n")
+        .replace("\\r", "\r")
+        .replace("\\t", "\t")
+        .replace("\\0", "\0")
+}
+
 pub fn run_command_with_info(cmd: String, config: Config) -> io::Result<()> {
     if !config.silent {
         print_info!("CMD", "{}", cmd)
