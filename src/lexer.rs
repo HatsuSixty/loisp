@@ -7,6 +7,7 @@ pub enum LexerTokenKind {
     CloseParen,
     Word,
     Integer,
+    String,
 }
 
 pub fn is_special_token(c: char) -> bool {
@@ -108,6 +109,23 @@ impl<Chars: Iterator<Item = char>> Iterator for Lexer<Chars> {
                     value: LexerTokenValue::from_string(text),
                     location: self.location.clone(),
                 }),
+                '"' => {
+                    let mut string = "".to_string();
+                    while let Some(x) = self.chars.next_if(|x| *x != '"') {
+                        string.push(x);
+                    }
+                    if let Some(_) = self.chars.peek() {
+                        self.chars.next();
+                    } else {
+                        eprintln!("ERROR: Reached EOF while parsing string");
+                        std::process::exit(1);
+                    }
+                    Some(LexerToken {
+                        kind: LexerTokenKind::String,
+                        value: LexerTokenValue::from_string(string),
+                        location: self.location.clone(),
+                    })
+                }
                 _ => {
                     while let Some(x) = self.chars.next_if(|x| !is_special_token(*x)) {
                         text.push(x);

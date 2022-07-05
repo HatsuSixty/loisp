@@ -136,6 +136,11 @@ pub fn parse_instruction(
                     value.integer = Some(next.value.integer);
                     instruction.parameters.push(value);
                 }
+                String => {
+                    let mut value = LoispValue::new(next.clone());
+                    value.string = next.value.string;
+                    instruction.parameters.push(value);
+                }
             }
         }
 
@@ -164,6 +169,7 @@ pub fn construct_instructions_from_tokens(
             CloseParen => return Err(ParserError::UnmatchedParenthesis(x.clone())),
             Word => return Err(ParserError::InvalidSyntax(x.clone())),
             Integer => return Err(ParserError::InvalidSyntax(x.clone())),
+            String => return Err(ParserError::InvalidSyntax(x.clone())),
         }
     }
     Ok(instructions)

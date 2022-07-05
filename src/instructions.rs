@@ -339,7 +339,13 @@ pub fn push_value(
                     p.token.clone(),
                 )))
             }
-            Some(LoispDatatype::String) => todo!("push strings"),
+            Some(LoispDatatype::String) => ir_push(
+                IrInstruction {
+                    kind: IrInstructionKind::PushString,
+                    operand: IrInstructionValue::new().string(p.string),
+                },
+                ir,
+            ),
             Some(LoispDatatype::Nothing) => {}
             None => panic!("unreachable"),
         }

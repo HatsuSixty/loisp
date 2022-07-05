@@ -67,6 +67,7 @@ pub enum IrInstructionKind {
     Or,
     And,
     Not,
+    PushString,
 }
 
 #[derive(Debug, Clone)]
@@ -88,6 +89,16 @@ impl IrInstructionValue {
         self.integer = integer;
         self.clone()
     }
+
+    pub fn string(&mut self, string: String) -> Self {
+        self.string = string;
+        self.clone()
+    }
+}
+
+pub struct IrString {
+    pub ident: usize,
+    pub string: String,
 }
 
 pub struct IrVariable {
@@ -98,6 +109,7 @@ pub struct IrVariable {
 pub struct IrContext {
     pub variables: Vec<IrVariable>,
     pub memories: Vec<IrVariable>,
+    pub strings: Vec<IrString>,
     pub label_count: i64,
 }
 
@@ -106,6 +118,7 @@ impl IrContext {
         IrContext {
             variables: vec![],
             memories: vec![],
+            strings: vec![],
             label_count: 0,
         }
     }
@@ -346,6 +359,14 @@ impl IrInstruction {
                 writeln!(f, "not rax")?;
                 writeln!(f, "push rax")?;
             }
+            PushString => {
+                let ident = context.strings.len();
+                context.strings.push(IrString {
+                    ident: ident,
+                    string: self.operand.string.clone(),
+                });
+                writeln!(f, "push str_{}", ident)?;
+            }
             Nop => {}
         }
 
@@ -434,6 +455,14 @@ impl IrProgram {
         writeln!(f, "mov rdi, 0")?;
         writeln!(f, "syscall")?;
         writeln!(f, "segment readable writable")?;
+
+        for s in &context.strings {
+            write!(f, "str_{}: db ", s.ident)?;
+            for c in s.string.chars() {
+                write!(f, "0x{:02x},", c as u8)?;
+            }
+            write!(f, "0x00\n")?;
+        }
 
         for v in &context.variables {
             writeln!(f, "var_{}: rb {}", v.ident, v.alloc)?;
