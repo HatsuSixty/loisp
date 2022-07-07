@@ -113,6 +113,11 @@ impl<Chars: Iterator<Item = char>> Iterator for Lexer<Chars> {
                     let mut string = "".to_string();
                     while let Some(x) = self.chars.next_if(|x| *x != '"') {
                         string.push(x);
+                        if x == '\\' {
+                            if let Some(a) = self.chars.next() {
+                                string.push(a);
+                            }
+                        }
                     }
                     if let Some(_) = self.chars.peek() {
                         self.chars.next();
