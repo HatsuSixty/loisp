@@ -28,6 +28,8 @@ pub fn escape_string(string: String) -> String {
         .replace("\\r", "\r")
         .replace("\\t", "\t")
         .replace("\\0", "\0")
+        .replace("\\\"", "\"")
+        .replace("\\\\", "\\");
 }
 
 pub fn run_command_with_info(cmd: String, config: Config) -> io::Result<()> {
