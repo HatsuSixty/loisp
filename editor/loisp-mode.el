@@ -31,6 +31,9 @@
 
 (defconst loisp-mode-syntax-table
   (with-syntax-table (copy-syntax-table)
+    ;; Python style comments
+    (modify-syntax-entry ?# "<")
+    (modify-syntax-entry ?\n ">")
     (syntax-table))
   "Syntax table for `loisp-mode'.")
 
@@ -69,7 +72,8 @@
 (define-derived-mode loisp-mode prog-mode "loisp"
   "Major Mode for editing Loisp source code"
   :syntax-table loisp-mode-syntax-table
-  (setq font-lock-defaults '(loisp-highlights)))
+  (setq font-lock-defaults '(loisp-highlights))
+  (setq-local comment-start "# "))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.loisp\\'" . loisp-mode))

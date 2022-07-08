@@ -76,6 +76,29 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
         }
     }
 
+    pub fn ignore_whitespaces_and_comments(&mut self) {
+        while let Some(c) = self.chars.next_if(|x| x.is_whitespace()) {
+            self.advance_location(c);
+        }
+
+        if let Some(x) = self.chars.peek() {
+            if *x == '#' {
+                while let Some(it) = self.chars.next() {
+                    self.advance_location(it);
+                    if it == '\n' || it == '\r' {
+                        break;
+                    }
+                }
+            } else {
+                return;
+            }
+        } else {
+            return;
+        }
+
+        self.ignore_whitespaces_and_comments();
+    }
+
     pub fn advance_location(&mut self, c: char) {
         self.location.c += 1;
         if c == '\n' {
@@ -90,9 +113,7 @@ impl<Chars: Iterator<Item = char>> Iterator for Lexer<Chars> {
 
     fn next(&mut self) -> Option<LexerToken> {
         use LexerTokenKind::*;
-        while let Some(c) = self.chars.next_if(|x| x.is_whitespace()) {
-            self.advance_location(c);
-        }
+        self.ignore_whitespaces_and_comments();
 
         if let Some(x) = self.chars.next() {
             let mut text = "".to_string();
