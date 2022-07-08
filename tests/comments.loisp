@@ -1,0 +1,12 @@
+# Program print numbers from 0 to 9
+
+(setvar x 0) # create the counter
+(while (<(getvar x)10)# condition
+  (print (getvar x)) # print
+  (chvar x (+(getvar x)1)) # increment
+  # long
+  # and
+  # boring
+  # explanation
+  # simulator
+)
