@@ -64,6 +64,8 @@ The available instructios are the following:
 | `macro`             | Create a macro with a body that contains the instructions given as parameters                                                         |
 | `expand`            | Expand the macro that has the name given as parameter                                                                                 |
 | `pop`               | Pop an element from the runtime stack and store it in the variable that has the name given as first parameter                         |
+| `castint`           | Return the value given as parameter with type `Integer`                                                                               |
+| `castptr`           | Return the value given as parameter with type `Pointer`                                                                               |
 
 ## Control Flow
 
