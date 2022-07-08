@@ -1,0 +1,9 @@
+(syscall 1 1 (castint "Hello, World!\n") 14)
+(syscall 1 1 (castint "\n") 1)
+(syscall 1 1 (castint "\\") 1)
+(syscall 1 1 (castint "\r") 1)
+(syscall 1 1 (castint "\\") 1)
+(syscall 1 1 (castint "\t") 1)
+(syscall 1 1 (castint "\"\"\n") 3)
+(syscall 1 1 (castint "WOULD YOU LOOK AT THAT -> \"THAT \"WORD\" IS QUOTED\"\n") 50)
+(syscall 1 1 (castint "#\n") 2) # thats pog
