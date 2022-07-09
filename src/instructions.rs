@@ -8,12 +8,7 @@ use std::fmt;
 use std::io;
 use std::path::Path;
 
-static DEFAULT_SEARCH_PATHS: [&str; 4] = [
-    ".",
-    "..",
-    "./std",
-    "../std",
-];
+static DEFAULT_SEARCH_PATHS: [&str; 4] = [".", "..", "./std", "../std"];
 
 #[derive(Debug)]
 pub enum LoispError {
@@ -1672,14 +1667,23 @@ impl LoispInstruction {
                 }
 
                 let mut full_path = String::new();
-                let path = self.parameters[0].string.clone();
+                let mut encountered = false;
+                let given_path = self.parameters[0].string.clone();
+
                 for p in DEFAULT_SEARCH_PATHS {
-                    let curp = format!("{}/{}", p, path);
+                    let curp = format!("{}/{}", p, given_path);
                     if exists(curp.as_str()) {
                         full_path = curp.clone();
+                        encountered = true;
                         break;
                     }
                 }
+
+                if !encountered {
+                    full_path = given_path;
+                }
+
+                full_path = full_path.replace("//", "/").to_string();
 
                 compile_file_into_existing_ir(full_path, ir, context)?;
             }
