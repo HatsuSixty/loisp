@@ -66,6 +66,7 @@ The available instructios are the following:
 | `pop`               | Pop an element from the runtime stack and store it in the variable that has the name given as first parameter                         |
 | `castint`           | Return the value given as parameter with type `Integer`                                                                               |
 | `castptr`           | Return the value given as parameter with type `Pointer`                                                                               |
+| `include`           | Compile a file given as parameter and bring everything from that file into the current scope                                          |
 
 ## Control Flow
 

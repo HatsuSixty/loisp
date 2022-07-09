@@ -6,6 +6,14 @@ use super::types::*;
 use std::collections::HashMap;
 use std::fmt;
 use std::io;
+use std::path::Path;
+
+static DEFAULT_SEARCH_PATHS: [&str; 4] = [
+    ".",
+    "..",
+    "./std",
+    "../std",
+];
 
 #[derive(Debug)]
 pub enum LoispError {
@@ -156,6 +164,7 @@ pub enum LoispInstructionType {
     Macro,
     Expand,
     Pop,
+    Include,
 }
 
 #[derive(Debug, Clone)]
@@ -458,6 +467,7 @@ impl LoispInstruction {
                 }
             }
             LoispInstructionType::Pop => Nothing,
+            LoispInstructionType::Include => Nothing,
         }
     }
 
@@ -1639,6 +1649,39 @@ impl LoispInstruction {
                         self.parameters[0].token.clone(),
                     ));
                 }
+            }
+            Include => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::String {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                if self.parameters[0].is_instruction_return() {
+                    return Err(LoispError::CantEvaluateAtCompileTime(self.token.clone()));
+                }
+
+                fn exists(p: &str) -> bool {
+                    return Path::new(p).exists();
+                }
+
+                let mut full_path = String::new();
+                let path = self.parameters[0].string.clone();
+                for p in DEFAULT_SEARCH_PATHS {
+                    let curp = format!("{}/{}", p, path);
+                    if exists(curp.as_str()) {
+                        full_path = curp.clone();
+                        break;
+                    }
+                }
+
+                compile_file_into_existing_ir(full_path, ir, context)?;
             }
             Nop => {}
         }

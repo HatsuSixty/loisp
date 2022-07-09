@@ -476,6 +476,28 @@ impl IrProgram {
     }
 }
 
+pub fn compile_file_into_existing_ir(f: String, ir: &mut IrProgram, context: &mut LoispContext) -> Result<()> {
+    let source = fs::read_to_string(f.as_str())?;
+    let lexer = Lexer::from_chars(source.chars(), f);
+
+    let result = construct_instructions_from_tokens(&mut lexer.peekable());
+    if let Err(error) = result {
+        eprintln!("{}", error);
+        std::process::exit(1);
+    }
+    let instructions = result.unwrap();
+
+    for i in instructions {
+        let result = i.to_ir(ir, context);
+        if let Err(error) = result {
+            eprintln!("{}", error);
+            std::process::exit(1);
+        }
+    }
+
+    Ok(())
+}
+
 pub fn compile_file_into_ir(f: String) -> Result<IrProgram> {
     let source = fs::read_to_string(f.as_str())?;
     let lexer = Lexer::from_chars(source.chars(), f);
