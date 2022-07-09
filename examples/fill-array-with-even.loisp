@@ -1,0 +1,27 @@
+(alloc buffer 1024)
+
+### Trying to print the length of the array make the program crash with "Floating point exception (core dumped)"
+#(syscall 1 1 (castint
+#               "Allocated array with the following amount of elements: "
+#             ) 55)
+#(print (/ 1024 8))
+
+(setvar j 0)
+(setvar i 0)
+
+(while (<(getvar j)100)
+  (if (=(%(getvar j)2)0)
+    (store64
+      (castptr (+(castint(getmem buffer))(*(getvar i)8)))
+      (getvar j)
+    )
+    (chvar i (+(getvar i)1))
+  )
+  (chvar j (+(getvar j)1))
+)
+
+(chvar i 0)
+(while (<(getvar i)1024)
+  (print (load64 (castptr (+(castint (getmem buffer))(getvar i)))))
+  (chvar i (+(getvar i)8))
+)
