@@ -12,14 +12,13 @@ macro_rules! print_info {
 }
 
 pub fn file_name_without_extension(f: String) -> String {
-    let mut input_file_extension = String::new();
-    for c in f.chars().rev() {
-        input_file_extension.insert(0, c);
-        if c == '.' {
-            break;
-        }
+    let mut split_by_dot: Vec<&str> = f.split('.').collect();
+    split_by_dot.pop();
+    let mut returnn = String::new();
+    for s in split_by_dot {
+        returnn = format!("{} {}", returnn, s);
     }
-    f.as_str().replace(input_file_extension.as_str().trim(), "")
+    return returnn.trim().to_string();
 }
 
 pub fn escape_string(string: String) -> String {
