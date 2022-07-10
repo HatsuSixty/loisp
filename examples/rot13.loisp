@@ -1,7 +1,7 @@
 (setvar b 65)
 
-(setvar rot13$1 0)
 (defun rot13
+  (setvar rot13$1 0)
   (pop rot13$1)
   (if (= (getvar rot13$1) 32)
     (block)

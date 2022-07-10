@@ -1754,6 +1754,24 @@ impl LoispInstruction {
                         },
                         ir,
                     );
+                } else if let Some(var) = context
+                    .local_variables
+                    .get(&self.parameters[0].clone().word.unwrap())
+                {
+                    ir_push(
+                        IrInstruction {
+                            kind: IrInstructionKind::PushVariable,
+                            operand: IrInstructionValue::new().integer(var.id as i64),
+                        },
+                        ir,
+                    );
+                    ir_push(
+                        IrInstruction {
+                            kind: IrInstructionKind::Store64,
+                            operand: IrInstructionValue::new(),
+                        },
+                        ir,
+                    );
                 } else {
                     return Err(LoispError::VariableNotFound(
                         self.parameters[0].token.clone(),
