@@ -1,0 +1,18 @@
+(setvar write$1 "0")
+(setvar write$2 0)
+(defun write
+  (pop write$2)
+  (pop write$1)
+
+  (syscall 1 1 (castint (getvar write$1)) (getvar write$2))
+)
+
+(defun callwrite
+  (call write)
+)
+
+(defun callcallwrite
+  (call callwrite)
+)
+
+(block "Hello!\n" 7 (call callcallwrite))
