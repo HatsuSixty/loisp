@@ -67,6 +67,8 @@ The available instructios are the following:
 | `castint`           | Return the value given as parameter with type `Integer`                                                                               |
 | `castptr`           | Return the value given as parameter with type `Pointer`                                                                               |
 | `include`           | Compile a file given as parameter and bring everything from that file into the current scope                                          |
+| `defun`             | Create a function with the name given as first parameter that executes the instructions given as rest of the parameters               |
+| `call`              | Call a function with the name given as first parameter                                                                                |
 
 ## Control Flow
 
