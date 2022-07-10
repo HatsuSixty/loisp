@@ -1,3 +1,9 @@
+#### std.loisp
+## The Loisp Standard Library
+
+(include "linux.loisp")
+(include "core.loisp")
+
 (defun strlen
   (setvar $1 0)
   (pop $1)
@@ -22,7 +28,12 @@
   (pop $1)
   (pop $2)
 
-  (syscall 1 (getvar $1) (getvar $2) (call strlen (getvar $2)))
+  (syscall
+    (expand SYS_write)
+    (getvar $1)
+    (getvar $2)
+    (call strlen (getvar $2))
+  )
 )
 
 (defun puts

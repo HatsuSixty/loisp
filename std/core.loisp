@@ -1,0 +1,5 @@
+(macro stdin  0)
+(macro stdout 1)
+(macro stderr 2)
+
+(macro NULL (castptr 0))
