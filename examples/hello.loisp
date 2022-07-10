@@ -1,1 +1,3 @@
-(syscall 1 1 (castint "Hello, World!\n") 14)
+(include "std.loisp")
+
+(call puts "Hello, World!\n")
