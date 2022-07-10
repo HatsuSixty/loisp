@@ -29,6 +29,7 @@ pub enum LoispError {
     NoJumpsInMacros(LexerToken),
     FunctionRedefinition(LexerToken),
     FunctionNotFound(LexerToken),
+    NoDeclarationsInFunctions(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -69,6 +70,11 @@ impl fmt::Display for LoispError {
             Self::NoDeclarationsInMacros(token) => write!(
                 f,
                 "{}: ERROR: Declarations inside macros are not allowed",
+                token.location
+            )?,
+            Self::NoDeclarationsInFunctions(token) => write!(
+                f,
+                "{}: ERROR: This kind of declaration inside functions is not allowed",
                 token.location
             )?,
             Self::MemoryRedefinition(token) => write!(
@@ -836,6 +842,8 @@ impl LoispInstruction {
                         if p.is_instruction_return() {
                             if p.instruction_return.kind == LoispInstructionType::SetVar
                                 || p.instruction_return.kind == LoispInstructionType::Alloc
+                                || p.instruction_return.kind == LoispInstructionType::Macro
+                                || p.instruction_return.kind == LoispInstructionType::DefFun
                             {
                                 return Err(LoispError::NoDeclarationsInLoops(p.token));
                             }
@@ -1571,6 +1579,8 @@ impl LoispInstruction {
                         if p.is_instruction_return() {
                             if p.instruction_return.kind == LoispInstructionType::SetVar
                                 || p.instruction_return.kind == LoispInstructionType::Alloc
+                                || p.instruction_return.kind == LoispInstructionType::Macro
+                                || p.instruction_return.kind == LoispInstructionType::DefFun
                             {
                                 return Err(LoispError::NoDeclarationsInMacros(p.token));
                             }
@@ -1731,6 +1741,13 @@ impl LoispInstruction {
                     let mut params = self.parameters.clone();
                     params.remove(0);
                     for p in params {
+                        if p.is_instruction_return() {
+                            if p.instruction_return.kind == LoispInstructionType::DefFun
+                                || p.instruction_return.kind == LoispInstructionType::Macro
+                            {
+                                return Err(LoispError::NoDeclarationsInFunctions(p.token.clone()));
+                            }
+                        }
                         push_value(p.clone(), ir, context)?;
                     }
 
