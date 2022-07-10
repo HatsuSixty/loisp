@@ -1781,12 +1781,16 @@ impl LoispInstruction {
                     return Err(LoispError::NotEnoughParameters(self.token.clone()));
                 }
 
-                if self.parameters.len() > 1 {
-                    return Err(LoispError::TooMuchParameters(self.token.clone()));
-                }
-
                 if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
                     return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                {
+                    let mut params = self.parameters.clone();
+                    params.remove(0);
+                    for p in params.iter().rev() {
+                        push_value(p.clone(), ir, context)?;
+                    }
                 }
 
                 if let Some(f) = context
