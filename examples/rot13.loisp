@@ -1,4 +1,4 @@
-(setvar b 65)
+(include "std.loisp")
 
 (defun rot13
   (setvar rot13$1 0)
@@ -14,5 +14,23 @@
   (getvar rot13$1)
 )
 
-(chvar b (call rot13 (getvar b)))
-(syscall 1 1 (castint (ptrto b)) 1)
+(alloc message 255)
+(call read (getmem message) 255)
+
+(if (=(call ?str-upper (getmem message))0)
+  (call str-to-upper (getmem message))
+  (block)
+)
+
+(setvar i 0)
+(setvar char 0)
+(while (<(getvar i)(call strlen (getmem message)))
+  # char = message[i]
+  (chvar char (load8(castptr(+(castint(getmem message))(getvar i)))))
+  # char = rot13(char)
+  (chvar char (call rot13 (getvar char)))
+  # putc(char)
+  (call putc (getvar char))
+  # i += 1
+  (chvar i (+(getvar i)1))
+)
