@@ -39,5 +39,70 @@
 (defun puts
   (setvar $1 0)
   (pop $1)
-  (call fputs 1 (getvar $1))
+  (call fputs (expand stdout) (getvar $1))
+)
+
+(defun fputc
+  (setvar $1 0)
+  (setvar $2 0)
+  (pop $1)
+  (pop $2)
+
+  (syscall (expand SYS_write) (getvar $1) (castint(ptrto $2)) 1)
+)
+
+(defun putc
+  (setvar $1 0)
+  (pop $1)
+  (call fputc (expand stdout) (getvar $1))
+)
+
+(defun read
+  (setvar $1 0)
+  (setvar $2 0)
+  (pop $1)
+  (pop $2)
+  (syscall (expand SYS_read) (expand stdin) (getvar $1) (getvar $2))
+)
+
+(defun ?alpha
+  (setvar char 0)
+  (pop char)
+  (|
+    (&(>=(getvar char)97)(<=(getvar char)122))
+    (&(>=(getvar char)65)(<=(getvar char)90))
+  )
+)
+
+(defun ?upper
+  (setvar char 0)
+  (pop char)
+
+  (setvar result (&(>=(getvar char)65)(<=(getvar char)90)))
+  (if (=(call ?alpha (getvar char))0)
+    (chvar result 1)
+    (block)
+  )
+  (getvar result)
+)
+
+(defun ?str-upper
+  (setvar str 0)
+  (pop str)
+
+  (setvar ?upper 1)
+
+  (setvar run 1)
+  (setvar i 0)
+  (while (&(getvar run)(<(getvar i)(call strlen (getvar str))))
+    (if (call ?upper (load8(castptr(+(getvar str)(getvar i)))))
+      (block)
+      (block
+        (chvar ?upper 0)
+        (chvar run 0)
+      )
+    )
+    (chvar i (+(getvar i)1))
+  )
+  (getvar ?upper)
 )
