@@ -15,3 +15,18 @@
   )
   (-(getvar counter)1)
 )
+
+(defun fputs
+  (setvar $1 0)
+  (setvar $2 0)
+  (pop $1)
+  (pop $2)
+
+  (syscall 1 (getvar $1) (getvar $2) (call strlen (getvar $2)))
+)
+
+(defun puts
+  (setvar $1 0)
+  (pop $1)
+  (call fputs 1 (getvar $1))
+)
