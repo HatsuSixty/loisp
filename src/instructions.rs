@@ -1205,6 +1205,17 @@ impl LoispInstruction {
                         },
                         ir,
                     );
+                } else if let Some(var) = context
+                    .local_variables
+                    .get(self.parameters[0].word.as_ref().unwrap())
+                {
+                    ir_push(
+                        IrInstruction {
+                            kind: IrInstructionKind::PushVariable,
+                            operand: IrInstructionValue::new().integer(var.id as i64),
+                        },
+                        ir,
+                    );
                 } else {
                     return Err(LoispError::VariableNotFound(
                         self.parameters[0].token.clone(),
