@@ -4,6 +4,10 @@
 (include "linux.loisp")
 (include "core.loisp")
 
+#### strlen
+## Parameters:
+# $1 -> String
+## Takes an string and calculates its length
 (defun strlen
   (setvar $1 0)
   (pop $1)
@@ -22,6 +26,11 @@
   (-(getvar counter)1)
 )
 
+### fputs
+## Parameters
+# $1 -> Integer
+# $2 -> String
+## Write the string given as second parameter to the file descriptor given as first parameter
 (defun fputs
   (setvar $1 0)
   (setvar $2 0)
@@ -36,12 +45,21 @@
   )
 )
 
+### puts
+## Parameters
+# $1 -> Integer
+## Write the string given as parameter to stdout
 (defun puts
   (setvar $1 0)
   (pop $1)
   (call fputs (expand stdout) (getvar $1))
 )
 
+### fputc
+## Parameters
+# $1 -> Integer
+# $2 -> Integer
+## Write the character given as second parameter to the file descriptor given as first parameter
 (defun fputc
   (setvar $1 0)
   (setvar $2 0)
@@ -51,12 +69,21 @@
   (syscall (expand SYS_write) (getvar $1) (castint(ptrto $2)) 1)
 )
 
+### putc
+## Parameters
+# $1 -> Integer
+## Write the character given as parameter to stdout
 (defun putc
   (setvar $1 0)
   (pop $1)
   (call fputc (expand stdout) (getvar $1))
 )
 
+### read
+## Parameters
+# $1 -> Pointer
+# $2 -> Integer
+## Read $2 bytes from stdin and write into $1
 (defun read
   (setvar $1 0)
   (setvar $2 0)
@@ -65,6 +92,10 @@
   (syscall (expand SYS_read) (expand stdin) (getvar $1) (getvar $2))
 )
 
+### ?alpha
+## Parameters
+# $1 -> Integer
+## Return 1 if the given character is in the alphabet
 (defun ?alpha
   (setvar char 0)
   (pop char)
@@ -74,6 +105,10 @@
   )
 )
 
+### ?upper
+## Parameters
+# $1 -> Integer
+## Return 1 if the given character is uppercase
 (defun ?upper
   (setvar char 0)
   (pop char)
@@ -86,6 +121,10 @@
   (getvar result)
 )
 
+### ?str-upper
+## Parameters
+# $1 -> String
+## Return 1 if all the characters of the given string is uppercase
 (defun ?str-upper
   (setvar str 0)
   (pop str)
@@ -107,6 +146,10 @@
   (getvar ?upper)
 )
 
+### char-to-upper
+## Parameters
+# $1 -> Integer
+## Return the given character as uppercase
 (defun char-to-upper
   (setvar char 0)
   (pop char)
@@ -117,6 +160,10 @@
   (getvar char)
 )
 
+### str-to-upper
+## Parameters
+# $1 -> String
+## Return the given string as uppercase
 (defun str-to-upper
   (setvar str 0)
   (pop str)
