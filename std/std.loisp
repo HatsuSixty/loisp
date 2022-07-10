@@ -106,3 +106,27 @@
   )
   (getvar ?upper)
 )
+
+(defun char-to-upper
+  (setvar char 0)
+  (pop char)
+  (if (&(=(call ?upper (getvar char))0)(call ?alpha (getvar char)))
+    (chvar char (-(getvar char)32))
+    (block)
+  )
+  (getvar char)
+)
+
+(defun str-to-upper
+  (setvar str 0)
+  (pop str)
+
+  (setvar i 0)
+  (while (<=(getvar i)(call strlen (getvar str)))
+    (store8
+      (castptr(+(getvar str)(getvar i)))
+      (call char-to-upper(load8(castptr(+(getvar str)(getvar i)))))
+    )
+    (chvar i (+(getvar i)1))
+  )
+)
