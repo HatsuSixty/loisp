@@ -260,6 +260,8 @@ pub struct LoispContext {
     pub functions: HashMap<String, LoispFunction>,
     pub local_memories: HashMap<String, LoispMemory>,
     pub local_variables: HashMap<String, LoispVariable>,
+    pub memory_count: usize,
+    pub variable_count: usize,
     pub inside_fun: bool,
 }
 
@@ -272,16 +274,30 @@ impl LoispContext {
             functions: HashMap::new(),
             local_memories: HashMap::new(),
             local_variables: HashMap::new(),
+            memory_count: 0,
+            variable_count: 0,
             inside_fun: false,
         }
     }
 
-    pub fn get_memory_count(&self) -> usize {
-        self.local_memories.len() + self.memories.len()
+    pub fn insert_memory(&mut self, string: String, value: LoispMemory) {
+        self.memories.insert(string, value);
+        self.memory_count += 1;
     }
 
-    pub fn get_variable_count(&self) -> usize {
-        self.local_variables.len() + self.variables.len()
+    pub fn insert_local_memory(&mut self, string: String, value: LoispMemory) {
+        self.local_memories.insert(string, value);
+        self.memory_count += 1;
+    }
+
+    pub fn insert_variable(&mut self, string: String, value: LoispVariable) {
+        self.variables.insert(string, value);
+        self.variable_count += 1;
+    }
+
+    pub fn insert_local_variable(&mut self, string: String, value: LoispVariable) {
+        self.local_variables.insert(string, value);
+        self.variable_count += 1;
     }
 }
 
@@ -714,7 +730,7 @@ impl LoispInstruction {
                 }
 
                 let variable = LoispVariable {
-                    id: context.get_variable_count(),
+                    id: context.variable_count,
                     value: self.parameters[1].clone(),
                 };
 
@@ -737,13 +753,9 @@ impl LoispInstruction {
                 }
 
                 if context.inside_fun {
-                    context
-                        .local_variables
-                        .insert(self.parameters[0].clone().word.unwrap(), variable.clone());
+                    context.insert_local_variable(self.parameters[0].clone().word.unwrap(), variable.clone());
                 } else {
-                    context
-                        .variables
-                        .insert(self.parameters[0].clone().word.unwrap(), variable.clone());
+                    context.insert_variable(self.parameters[0].clone().word.unwrap(), variable.clone());
                 }
 
                 ir_push(
@@ -1451,18 +1463,14 @@ impl LoispInstruction {
                     }
 
                     let memory = LoispMemory {
-                        id: context.get_memory_count(),
+                        id: context.memory_count,
                         alloc: self.parameters[1].integer.unwrap() as usize,
                     };
 
                     if context.inside_fun {
-                        context
-                            .local_memories
-                            .insert(self.parameters[0].clone().word.unwrap(), memory);
+                        context.insert_local_memory(self.parameters[0].clone().word.unwrap(), memory);
                     } else {
-                        context
-                            .memories
-                            .insert(self.parameters[0].clone().word.unwrap(), memory);
+                        context.insert_memory(self.parameters[0].clone().word.unwrap(), memory);
                     }
                 }
 
