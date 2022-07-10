@@ -1,0 +1,17 @@
+(defun strlen
+  (setvar $1 0)
+  (pop $1)
+
+  (setvar char 0)
+  (setvar quit 0)
+  (setvar counter 0)
+  (while (!=(getvar quit)1)
+    (chvar char (load8(castptr(+(getvar $1)(getvar counter)))))
+    (if (=(getvar char)0)
+      (chvar quit 1)
+      (block)
+    )
+    (chvar counter (+(getvar counter)1))
+  )
+  (-(getvar counter)1)
+)
