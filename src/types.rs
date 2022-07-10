@@ -1,4 +1,4 @@
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum LoispDatatype {
     Integer,
     String,

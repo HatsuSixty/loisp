@@ -3,12 +3,14 @@ use super::config::*;
 use super::instructions::*;
 use super::lexer::*;
 use super::parser::*;
+use super::types::*;
 use super::print_info;
 
 use std::fs;
 use std::io::*;
 
 static IR_ASSERT_ENABLED: bool = false;
+static X86_64_RET_STACK_CAP: usize = 65536;
 
 macro_rules! assert_if_enabled {
     ($($arg:tt)*) => {{
@@ -68,6 +70,8 @@ pub enum IrInstructionKind {
     And,
     Not,
     PushString,
+    Call,
+    Return,
 }
 
 #[derive(Debug, Clone)]
@@ -367,10 +371,56 @@ impl IrInstruction {
                 });
                 writeln!(f, "push str_{}", ident)?;
             }
+            Call => {
+                writeln!(f, "mov rax, [ret_stack_rsp]")?;
+                writeln!(f, "sub rax, 8")?;
+                writeln!(f, "mov [ret_stack_rsp], rax")?;
+                writeln!(f, "mov rbx, addr_{}", context.label_count)?;
+                writeln!(f, "mov [rax+8], rbx")?;
+                writeln!(f, "jmp addr_{}", self.operand.integer)?;
+            }
+            Return => {
+                writeln!(f, "mov rax, [ret_stack_rsp]")?;
+                writeln!(f, "add rax, 8")?;
+                writeln!(f, "mov [ret_stack_rsp], rax")?;
+                writeln!(f, "mov rbx, QWORD [rax]")?;
+                writeln!(f, "jmp rbx")?;
+            }
             Nop => {}
         }
 
         Ok(())
+    }
+
+    pub fn get_loisp_datatype(&self) -> LoispDatatype {
+        use LoispDatatype::*;
+        use IrInstructionKind::*;
+
+        match self.kind {
+            PushMemory => return Pointer,
+            PushInteger => return Integer,
+            Plus => return Integer,
+            Minus => return Integer,
+            Multiplication => return Integer,
+            Division => return Integer,
+            ShiftLeft => return Integer,
+            ShiftRight => return Integer,
+            And => return Integer,
+            Or => return Integer,
+            Not => return Integer,
+            Load8 => return Integer,
+            Load16 => return Integer,
+            Load32 => return Integer,
+            Load64 => return Integer,
+            GreaterEqual => return Integer,
+            LessEqual => return Integer,
+            Greater => return Integer,
+            Less => return Integer,
+            Equal => return Integer,
+            NotEqual => return Integer,
+            PushString => return String,
+            _ => return Nothing,
+        }
     }
 }
 
@@ -443,6 +493,8 @@ impl IrProgram {
         writeln!(f, "ret")?;
         writeln!(f, "entry start")?;
         writeln!(f, "start:")?;
+        writeln!(f, "mov rax, ret_stack_end")?;
+        writeln!(f, "mov [ret_stack_rsp], rax")?;
 
         for (k, i) in self.instructions.iter().enumerate() {
             writeln!(f, "addr_{}:", k)?;
@@ -456,6 +508,8 @@ impl IrProgram {
         writeln!(f, "syscall")?;
         writeln!(f, "segment readable writable")?;
 
+        // data
+
         for s in &context.strings {
             write!(f, "str_{}: db ", s.ident)?;
             for c in s.string.chars() {
@@ -463,6 +517,8 @@ impl IrProgram {
             }
             write!(f, "0x00\n")?;
         }
+
+        // bss
 
         for v in &context.variables {
             writeln!(f, "var_{}: rb {}", v.ident, v.alloc)?;
@@ -472,11 +528,19 @@ impl IrProgram {
             writeln!(f, "mem_{}: rb {}", m.ident, m.alloc)?;
         }
 
+        writeln!(f, "ret_stack_rsp: rb 8")?;
+        writeln!(f, "ret_stack: rb {}", X86_64_RET_STACK_CAP)?;
+        writeln!(f, "ret_stack_end:")?;
+
         Ok(())
     }
 }
 
-pub fn compile_file_into_existing_ir(f: String, ir: &mut IrProgram, context: &mut LoispContext) -> Result<()> {
+pub fn compile_file_into_existing_ir(
+    f: String,
+    ir: &mut IrProgram,
+    context: &mut LoispContext,
+) -> Result<()> {
     let source = fs::read_to_string(f.as_str())?;
     let lexer = Lexer::from_chars(source.chars(), f);
 

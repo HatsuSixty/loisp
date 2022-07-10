@@ -27,6 +27,8 @@ pub enum LoispError {
     MacroNotFound(LexerToken),
     MacroRedefinition(LexerToken),
     NoJumpsInMacros(LexerToken),
+    FunctionRedefinition(LexerToken),
+    FunctionNotFound(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -94,10 +96,20 @@ impl fmt::Display for LoispError {
                 "{}: ERROR: Macro redefinition: `{}`",
                 token.location, token.value.string
             )?,
+            Self::FunctionRedefinition(token) => write!(
+                f,
+                "{}: ERROR: Function redefinition: `{}`",
+                token.location, token.value.string
+            )?,
             Self::NoJumpsInMacros(token) => write!(
                 f,
                 "{}: ERROR: Macros should not contain instructions that perform jumps",
                 token.location
+            )?,
+            Self::FunctionNotFound(token) => write!(
+                f,
+                "{}: ERROR: Function not found: `{}`",
+                token.location, token.value.string
             )?,
         }
         Ok(())
@@ -160,6 +172,8 @@ pub enum LoispInstructionType {
     Expand,
     Pop,
     Include,
+    DefFun,
+    Call,
 }
 
 #[derive(Debug, Clone)]
@@ -209,6 +223,12 @@ impl LoispValue {
 }
 
 #[derive(Debug, Clone)]
+pub struct LoispFunction {
+    pub addr: usize,
+    pub typ: LoispDatatype,
+}
+
+#[derive(Debug, Clone)]
 pub struct LoispMacro {
     pub id: usize,
     pub program: IrProgram,
@@ -231,6 +251,7 @@ pub struct LoispContext {
     pub variables: HashMap<String, LoispVariable>,
     pub memories: HashMap<String, LoispMemory>,
     pub macros: HashMap<String, LoispMacro>,
+    pub functions: HashMap<String, LoispFunction>,
 }
 
 impl LoispContext {
@@ -239,6 +260,7 @@ impl LoispContext {
             variables: HashMap::new(),
             memories: HashMap::new(),
             macros: HashMap::new(),
+            functions: HashMap::new(),
         }
     }
 }
@@ -432,30 +454,7 @@ impl LoispInstruction {
                     return Nothing;
                 } else {
                     if let Some(last) = maccro.unwrap().program.instructions.last() {
-                        match last.kind {
-                            IrInstructionKind::PushMemory => return Pointer,
-                            IrInstructionKind::PushInteger => return Integer,
-                            IrInstructionKind::Plus => return Integer,
-                            IrInstructionKind::Minus => return Integer,
-                            IrInstructionKind::Multiplication => return Integer,
-                            IrInstructionKind::Division => return Integer,
-                            IrInstructionKind::ShiftLeft => return Integer,
-                            IrInstructionKind::ShiftRight => return Integer,
-                            IrInstructionKind::And => return Integer,
-                            IrInstructionKind::Or => return Integer,
-                            IrInstructionKind::Not => return Integer,
-                            IrInstructionKind::Load8 => return Integer,
-                            IrInstructionKind::Load16 => return Integer,
-                            IrInstructionKind::Load32 => return Integer,
-                            IrInstructionKind::Load64 => return Integer,
-                            IrInstructionKind::GreaterEqual => return Integer,
-                            IrInstructionKind::LessEqual => return Integer,
-                            IrInstructionKind::Greater => return Integer,
-                            IrInstructionKind::Less => return Integer,
-                            IrInstructionKind::Equal => return Integer,
-                            IrInstructionKind::NotEqual => return Integer,
-                            _ => return Nothing,
-                        }
+                        return last.get_loisp_datatype();
                     } else {
                         return Nothing;
                     }
@@ -463,6 +462,17 @@ impl LoispInstruction {
             }
             LoispInstructionType::Pop => Nothing,
             LoispInstructionType::Include => Nothing,
+            LoispInstructionType::DefFun => Nothing,
+            LoispInstructionType::Call => {
+                if let Some(function) = context
+                    .functions
+                    .get(self.parameters[0].word.as_ref().unwrap())
+                {
+                    return function.clone().typ;
+                } else {
+                    return Nothing;
+                }
+            }
         }
     }
 
@@ -1686,6 +1696,122 @@ impl LoispInstruction {
                 full_path = full_path.replace("//", "/").to_string();
 
                 compile_file_into_existing_ir(full_path, ir, context)?;
+            }
+            DefFun => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                if let Some(_) = context
+                    .functions
+                    .get(&self.parameters[0].clone().word.unwrap())
+                {
+                    return Err(LoispError::FunctionRedefinition(
+                        self.parameters[0].token.clone(),
+                    ));
+                }
+
+                let defun_addr = ir.instructions.len() as i64;
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Jump,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                );
+
+                let function_addr = ir.instructions.len() as i64;
+                let mut function_type = LoispDatatype::Nothing;
+                {
+                    let mut params = self.parameters.clone();
+                    params.remove(0);
+                    for p in params {
+                        push_value(p.clone(), ir, context)?;
+                    }
+
+                    if let Some(i) = ir.instructions.last() {
+                        function_type = i.get_loisp_datatype();
+                    }
+                }
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Return,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                );
+
+                let after_end = ir.instructions.len() as i64;
+                ir.instructions[defun_addr as usize].operand =
+                    IrInstructionValue::new().integer(after_end + 1);
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Nop,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                );
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Nop,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                );
+
+                let function = LoispFunction {
+                    addr: function_addr as usize,
+                    typ: function_type,
+                };
+
+                context
+                    .functions
+                    .insert(self.parameters[0].clone().word.unwrap(), function);
+            }
+            Call => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                if let Some(f) = context
+                    .functions
+                    .get(&self.parameters[0].clone().word.unwrap())
+                {
+                    ir_push(
+                        IrInstruction {
+                            kind: IrInstructionKind::Call,
+                            operand: IrInstructionValue::new().integer(f.addr as i64),
+                        },
+                        ir,
+                    );
+                    ir_push(
+                        IrInstruction {
+                            kind: IrInstructionKind::Nop,
+                            operand: IrInstructionValue::new().integer(f.addr as i64),
+                        },
+                        ir,
+                    );
+                } else {
+                    return Err(LoispError::FunctionNotFound(
+                        self.parameters[0].token.clone(),
+                    ));
+                }
             }
             Nop => {}
         }
