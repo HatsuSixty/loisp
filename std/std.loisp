@@ -177,3 +177,27 @@
     (chvar i (+(getvar i)1))
   )
 )
+
+### chop-one-char
+## Parameters
+# $1 -> String
+## Return the given string without the last character
+(defun chop-one-char
+  (setvar str 0)
+  (pop str)
+
+  (alloc str 1024)
+  (setvar i 0)
+  (setvar run 1)
+  (while (&(<(getvar i)(call strlen (getvar str)))(getvar run))
+    (if (!=(load8(castptr(+(getvar str)(getvar i))))10)
+      (store8
+        (castptr(+(castint(getmem str))(getvar i)))
+        (load8(castptr(+(getvar str)(getvar i))))
+      )
+      (chvar run 0)
+    )
+    (chvar i (+(getvar i)1))
+  )
+  (getmem str)
+)
