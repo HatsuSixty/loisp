@@ -1,0 +1,9 @@
+(include "std.loisp")
+
+(call puts "What is your name? ")
+(alloc buffer 255)
+(call read (getmem buffer) 255)
+
+(call puts "Hello, ")
+(call puts (call chop-one-char (getmem buffer)))
+(call puts "! Nice to see you! ( ^-^)/\n")
