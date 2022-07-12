@@ -126,7 +126,7 @@ pub fn parse_instruction(
                 }
                 OpenParen => {
                     let mut value = LoispValue::new(next.clone());
-                    value.instruction_return = parse_instruction(lexer, next.clone())?;
+                    value.instruction_return = Some(parse_instruction(lexer, next.clone())?);
                     instruction.parameters.push(value);
                 }
                 Word => {
@@ -141,7 +141,7 @@ pub fn parse_instruction(
                 }
                 String => {
                     let mut value = LoispValue::new(next.clone());
-                    value.string = next.value.string;
+                    value.string = Some(next.value.string);
                     instruction.parameters.push(value);
                 }
             }

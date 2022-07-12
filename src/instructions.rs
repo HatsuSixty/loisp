@@ -186,9 +186,9 @@ pub enum LoispInstructionType {
 pub struct LoispValue {
     pub integer: Option<i64>,
     pub word: Option<String>,
-    pub string: String,
+    pub string: Option<String>,
     pub token: LexerToken,
-    pub instruction_return: LoispInstruction,
+    pub instruction_return: Option<LoispInstruction>,
 }
 
 impl LoispValue {
@@ -196,27 +196,27 @@ impl LoispValue {
         LoispValue {
             integer: None,
             word: None,
-            string: String::new(),
+            string: None,
             token: t.clone(),
-            instruction_return: LoispInstruction::new(t.clone()),
+            instruction_return: None,
         }
     }
 
     pub fn is_instruction_return(&self) -> bool {
-        self.integer.is_none() && self.string.len() == 0 && !self.instruction_return.is_empty()
+        self.instruction_return.is_some()
     }
 
     pub fn datatype(&self, context: &mut LoispContext) -> Option<LoispDatatype> {
         use LoispDatatype::*;
 
-        if !self.integer.is_none() {
+        if let Some(_) = self.integer {
             Some(Integer)
-        } else if !self.word.is_none() {
+        } else if let Some(_) = self.word {
             Some(Word)
-        } else if self.string.len() != 0 {
+        } else if let Some(_) = self.string {
             Some(String)
-        } else if !self.instruction_return.is_empty() {
-            let typee = self.instruction_return.return_type(context);
+        } else if let Some(i) = self.instruction_return.clone() {
+            let typee = i.clone().return_type(context);
             Some(typee)
         } else {
             None
@@ -378,8 +378,8 @@ pub fn push_value(
     ir: &mut IrProgram,
     context: &mut LoispContext,
 ) -> Result<(), LoispError> {
-    if p.is_instruction_return() {
-        p.instruction_return.to_ir(ir, context)?;
+    if let Some(_) = p.instruction_return {
+        p.instruction_return.unwrap().to_ir(ir, context)?;
     } else {
         match p.datatype(context) {
             Some(LoispDatatype::Integer) => ir_push(
@@ -404,7 +404,7 @@ pub fn push_value(
             Some(LoispDatatype::String) => ir_push(
                 IrInstruction {
                     kind: IrInstructionKind::PushString,
-                    operand: IrInstructionValue::new().string(p.string),
+                    operand: IrInstructionValue::new().string(p.string.unwrap()),
                 },
                 ir,
             ),
@@ -534,10 +534,6 @@ impl LoispInstruction {
             }
         }
         Ok(())
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.kind == LoispInstructionType::Nop && self.parameters.len() == 0
     }
 
     pub fn to_ir(&self, ir: &mut IrProgram, context: &mut LoispContext) -> Result<(), LoispError> {
@@ -753,9 +749,15 @@ impl LoispInstruction {
                 }
 
                 if context.inside_fun {
-                    context.insert_local_variable(self.parameters[0].clone().word.unwrap(), variable.clone());
+                    context.insert_local_variable(
+                        self.parameters[0].clone().word.unwrap(),
+                        variable.clone(),
+                    );
                 } else {
-                    context.insert_variable(self.parameters[0].clone().word.unwrap(), variable.clone());
+                    context.insert_variable(
+                        self.parameters[0].clone().word.unwrap(),
+                        variable.clone(),
+                    );
                 }
 
                 ir_push(
@@ -880,7 +882,9 @@ impl LoispInstruction {
                 {
                     var = v.clone();
                 } else {
-                    return Err(LoispError::VariableNotFound(self.parameters[0].token.clone()));
+                    return Err(LoispError::VariableNotFound(
+                        self.parameters[0].token.clone(),
+                    ));
                 }
 
                 push_value(self.parameters.clone().last().unwrap().clone(), ir, context)?;
@@ -921,10 +925,14 @@ impl LoispInstruction {
                     parameters.remove(0);
                     for p in parameters {
                         if p.is_instruction_return() {
-                            if p.instruction_return.kind == LoispInstructionType::SetVar
-                                || p.instruction_return.kind == LoispInstructionType::Alloc
-                                || p.instruction_return.kind == LoispInstructionType::Macro
-                                || p.instruction_return.kind == LoispInstructionType::DefFun
+                            if p.clone().instruction_return.unwrap().kind
+                                == LoispInstructionType::SetVar
+                                || p.clone().instruction_return.unwrap().kind
+                                    == LoispInstructionType::Alloc
+                                || p.clone().instruction_return.unwrap().kind
+                                    == LoispInstructionType::Macro
+                                || p.clone().instruction_return.unwrap().kind
+                                    == LoispInstructionType::DefFun
                             {
                                 return Err(LoispError::NoDeclarationsInLoops(p.token));
                             }
@@ -1468,7 +1476,8 @@ impl LoispInstruction {
                     };
 
                     if context.inside_fun {
-                        context.insert_local_memory(self.parameters[0].clone().word.unwrap(), memory);
+                        context
+                            .insert_local_memory(self.parameters[0].clone().word.unwrap(), memory);
                     } else {
                         context.insert_memory(self.parameters[0].clone().word.unwrap(), memory);
                     }
@@ -1691,10 +1700,14 @@ impl LoispInstruction {
                     params.remove(0);
                     for p in params {
                         if p.is_instruction_return() {
-                            if p.instruction_return.kind == LoispInstructionType::SetVar
-                                || p.instruction_return.kind == LoispInstructionType::Alloc
-                                || p.instruction_return.kind == LoispInstructionType::Macro
-                                || p.instruction_return.kind == LoispInstructionType::DefFun
+                            if p.instruction_return.clone().unwrap().kind
+                                == LoispInstructionType::SetVar
+                                || p.clone().instruction_return.unwrap().kind
+                                    == LoispInstructionType::Alloc
+                                || p.clone().instruction_return.unwrap().kind
+                                    == LoispInstructionType::Macro
+                                || p.clone().instruction_return.unwrap().kind
+                                    == LoispInstructionType::DefFun
                             {
                                 return Err(LoispError::NoDeclarationsInMacros(p.token));
                             }
@@ -1820,7 +1833,7 @@ impl LoispInstruction {
 
                 let mut full_path = String::new();
                 let mut encountered = false;
-                let given_path = self.parameters[0].string.clone();
+                let given_path = self.parameters[0].clone().string.unwrap();
 
                 for p in DEFAULT_SEARCH_PATHS {
                     let curp = format!("{}/{}", p, given_path);
@@ -1876,8 +1889,10 @@ impl LoispInstruction {
                     params.remove(0);
                     for p in params {
                         if p.is_instruction_return() {
-                            if p.instruction_return.kind == LoispInstructionType::DefFun
-                                || p.instruction_return.kind == LoispInstructionType::Macro
+                            if p.clone().instruction_return.unwrap().kind
+                                == LoispInstructionType::DefFun
+                                || p.clone().instruction_return.unwrap().kind
+                                    == LoispInstructionType::Macro
                             {
                                 return Err(LoispError::NoDeclarationsInFunctions(p.token.clone()));
                             }
