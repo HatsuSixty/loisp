@@ -4,7 +4,7 @@
 (include "linux.loisp")
 (include "core.loisp")
 
-#### strlen
+### strlen
 ## Parameters:
 # $1 -> String
 ## Takes an string and calculates its length
@@ -30,7 +30,7 @@
 ## Parameters
 # $1 -> Integer
 # $2 -> String
-## Write the string given as second parameter to the file descriptor given as first parameter
+## Write the string given as second parameter into the file with the file descriptor given as first parameter
 (defun fputs
   (setvar $1 0)
   (setvar $2 0)
