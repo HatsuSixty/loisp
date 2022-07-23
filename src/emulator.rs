@@ -4,24 +4,35 @@ use super::config::*;
 use std::io::*;
 
 pub struct Emulator {
-    args: Vec<String>,
+    pub args: Vec<String>,
+    pub stack: Vec<i64>,
+    pub ip: usize,
 }
 
 impl Emulator {
     pub fn new() -> Emulator {
         Emulator {
             args: vec![],
+            stack: vec![],
+            ip: 0,
         }
     }
 }
 
-pub fn emulate_program(ir: IrProgram, _emulator: &mut Emulator) {
-    let i = 0;
-    while i < ir.instructions.len() {
-        let op = ir.instructions[i].clone();
+pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
+    while emulator.ip < ir.instructions.len() {
+        let op = ir.instructions[emulator.ip].clone();
         match op.kind {
-            IrInstructionKind::Print => todo!("Print"),
-            IrInstructionKind::PushInteger => todo!("PushInteger"),
+            IrInstructionKind::Print => {
+                if let Some(a) = emulator.stack.pop() {
+                    println!("{}", a);
+                    emulator.ip += 1;
+                }
+            }
+            IrInstructionKind::PushInteger => {
+                emulator.stack.push(op.operand.integer);
+                emulator.ip += 1;
+            }
             IrInstructionKind::Plus => todo!("Plus"),
             IrInstructionKind::Minus => todo!("Minus"),
             IrInstructionKind::Multiplication => todo!("Multiplication"),
