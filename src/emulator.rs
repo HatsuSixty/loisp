@@ -410,8 +410,44 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.ip += 1;
             }
             IrInstructionKind::Greater => todo!("Greater"),
-            IrInstructionKind::LessEqual => todo!("LessEqual"),
-            IrInstructionKind::GreaterEqual => todo!("GreaterEqual"),
+            IrInstructionKind::LessEqual => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push((a <= b) as i64);
+                emulator.ip += 1;
+            }
+            IrInstructionKind::GreaterEqual => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push((a >= b) as i64);
+                emulator.ip += 1;
+            }
             IrInstructionKind::AllocMemory => emulator.ip += 1,
             IrInstructionKind::PushMemory => {
                 if let Some(addr) = emulator.memories.get(&(op.operand.integer as usize)) {
@@ -423,7 +459,25 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
             }
             IrInstructionKind::ShiftLeft => todo!("ShiftLeft"),
             IrInstructionKind::ShiftRight => todo!("ShiftRight"),
-            IrInstructionKind::Or => todo!("Or"),
+            IrInstructionKind::Or => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push(a | b);
+                emulator.ip += 1;
+            }
             IrInstructionKind::And => {
                 let a;
                 let b;
