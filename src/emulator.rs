@@ -89,9 +89,45 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.ip += 1;
             }
             IrInstructionKind::Minus => todo!("Minus"),
-            IrInstructionKind::Multiplication => todo!("Multiplication"),
+            IrInstructionKind::Multiplication => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push(a * b);
+                emulator.ip += 1;
+            }
             IrInstructionKind::Division => todo!("Division"),
-            IrInstructionKind::Mod => todo!("Mod"),
+            IrInstructionKind::Mod => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push(a % b);
+                emulator.ip += 1;
+            }
             IrInstructionKind::Syscall => {
                 let syscall_number;
                 if let Some(id) = emulator.stack.pop() {
@@ -217,12 +253,60 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 }
                 emulator.ip += 1;
             }
-            IrInstructionKind::Jump => todo!("Jump"),
-            IrInstructionKind::Nop => todo!("Nop"),
-            IrInstructionKind::If => todo!("If"),
-            IrInstructionKind::Equal => todo!("Equal"),
+            IrInstructionKind::Jump => {
+                emulator.ip = op.operand.integer as usize;
+            }
+            IrInstructionKind::Nop => emulator.ip += 1,
+            IrInstructionKind::If => {
+                if let Some(a) = emulator.stack.pop() {
+                    if a != 0 {
+                        emulator.ip += 1;
+                    } else {
+                        emulator.ip = op.operand.integer as usize;
+                    }
+                } else {
+                    panic!("stack underflow");
+                }
+            }
+            IrInstructionKind::Equal => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push((b == a) as i64);
+                emulator.ip += 1;
+            }
             IrInstructionKind::NotEqual => todo!("NotEqual"),
-            IrInstructionKind::Less => todo!("Less"),
+            IrInstructionKind::Less => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push((a < b) as i64);
+                emulator.ip += 1;
+            }
             IrInstructionKind::Greater => todo!("Greater"),
             IrInstructionKind::LessEqual => todo!("LessEqual"),
             IrInstructionKind::GreaterEqual => todo!("GreaterEqual"),
