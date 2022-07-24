@@ -409,7 +409,25 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.stack.push((a < b) as i64);
                 emulator.ip += 1;
             }
-            IrInstructionKind::Greater => todo!("Greater"),
+            IrInstructionKind::Greater => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push((a > b) as i64);
+                emulator.ip += 1;
+            }
             IrInstructionKind::LessEqual => {
                 let a;
                 let b;
