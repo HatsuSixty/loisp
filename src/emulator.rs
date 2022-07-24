@@ -3,6 +3,7 @@ use super::config::*;
 use super::common::*;
 
 use std::io::*;
+use std::collections::HashMap;
 
 pub struct Emulator {
     pub args: Vec<String>,
@@ -11,11 +12,21 @@ pub struct Emulator {
 
     pub string_size: usize,
 
+    pub variables: HashMap<usize, usize>,
+    pub variables_size: usize,
+
     pub memory: Vec<u8>,
 }
 
-static STRING_BUFFER_START: usize = 0;
+static NULL_PTR_PADDING: usize = 1;
+
 static STRING_BUFFER_CAPACITY: usize = 640000; // should be enough for everyone
+static STRING_BUFFER_START: usize = NULL_PTR_PADDING;
+
+static VARIABLE_BUFFER_CAPACITY: usize = 640000; // should be enough for everyone
+static VARIABLE_BUFFER_START: usize = STRING_BUFFER_START + STRING_BUFFER_CAPACITY;
+
+static X86_64_MEMORY_CAPACITY: usize = NULL_PTR_PADDING + STRING_BUFFER_CAPACITY + VARIABLE_BUFFER_CAPACITY;
 
 impl Emulator {
     pub fn new() -> Emulator {
@@ -26,7 +37,10 @@ impl Emulator {
 
             string_size: STRING_BUFFER_START,
 
-            memory: vec![0; STRING_BUFFER_CAPACITY],
+            variables: HashMap::new(),
+            variables_size: VARIABLE_BUFFER_START,
+
+            memory: vec![0; X86_64_MEMORY_CAPACITY],
         }
     }
 }
@@ -99,16 +113,62 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 }
                 emulator.ip += 1;
             }
-            IrInstructionKind::AllocVariable => todo!("AllocVariable"),
+            IrInstructionKind::AllocVariable => {
+                emulator.variables.insert(emulator.variables.len(), emulator.variables_size);
+                emulator.variables_size += op.operand.integer as usize;
+                emulator.ip += 1;
+            }
             IrInstructionKind::Load8 => todo!("Load8"),
             IrInstructionKind::Store8 => todo!("Store8"),
             IrInstructionKind::Load16 => todo!("Load16"),
             IrInstructionKind::Store16 => todo!("Store16"),
             IrInstructionKind::Load32 => todo!("Load32"),
             IrInstructionKind::Store32 => todo!("Store32"),
-            IrInstructionKind::Load64 => todo!("Load64"),
-            IrInstructionKind::Store64 => todo!("Store64"),
-            IrInstructionKind::PushVariable => todo!("PushVariable"),
+            IrInstructionKind::Load64 => {
+                let addr;
+                if let Some(a) = emulator.stack.pop() {
+                    addr = a;
+                } else {
+                    panic!("stack underflow");
+                }
+
+                let mut bytes: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
+                for i in 0..8 {
+                    bytes[i] = emulator.memory[(addr as usize) + i];
+                }
+                emulator.stack.push(i64::from_le_bytes(bytes));
+                emulator.ip += 1;
+            }
+            IrInstructionKind::Store64 => {
+                let mut addr;
+                let value;
+
+                if let Some(a) = emulator.stack.pop() {
+                    addr = a;
+                } else {
+                    panic!("stack underflow");
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    value = v;
+                } else {
+                    panic!("stack underflow");
+                }
+
+                let bytes = value.to_le_bytes();
+                for b in bytes {
+                    emulator.memory[addr as usize] = b;
+                    addr += 1;
+                }
+
+                emulator.ip += 1;
+            }
+            IrInstructionKind::PushVariable => {
+                if let Some(addr) = emulator.variables.get(&(op.operand.integer as usize)) {
+                    emulator.stack.push(*addr as i64);
+                }
+                emulator.ip += 1;
+            }
             IrInstructionKind::Jump => todo!("Jump"),
             IrInstructionKind::Nop => todo!("Nop"),
             IrInstructionKind::If => todo!("If"),
