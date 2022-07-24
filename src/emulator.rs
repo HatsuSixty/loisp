@@ -179,6 +179,42 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 }
 
                 match syscall_number {
+                    0 => { // SYS_read
+                        let fd;
+                        let mut buf;
+                        let count;
+
+                        if let Some(d) = emulator.stack.pop() {
+                            fd = d;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if let Some(b) = emulator.stack.pop() {
+                            buf = b;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if let Some(c) = emulator.stack.pop() {
+                            count = c;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        let mut read = String::new();
+                        assert!(fd == 0, "unsupported file descriptor for read syscall");
+                        stdin().read_line(&mut read).expect("error performing read syscall");
+
+                        for i in 0..count {
+                            if i >= (read.as_bytes().len() as i64) {
+                                emulator.memory[buf as usize] = 0;
+                            } else {
+                                emulator.memory[buf as usize] = read.as_bytes()[i as usize];
+                            }
+                            buf += 1;
+                        }
+                    }
                     1 => {
                         let fd;
                         let buf;
@@ -388,7 +424,25 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
             IrInstructionKind::ShiftLeft => todo!("ShiftLeft"),
             IrInstructionKind::ShiftRight => todo!("ShiftRight"),
             IrInstructionKind::Or => todo!("Or"),
-            IrInstructionKind::And => todo!("And"),
+            IrInstructionKind::And => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push(a & b);
+                emulator.ip += 1;
+            }
             IrInstructionKind::Not => todo!("Not"),
             IrInstructionKind::PushString => {
                 let addr = emulator.string_size;
