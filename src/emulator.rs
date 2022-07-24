@@ -581,8 +581,44 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 }
                 emulator.ip += 1;
             }
-            IrInstructionKind::ShiftLeft => todo!("ShiftLeft"),
-            IrInstructionKind::ShiftRight => todo!("ShiftRight"),
+            IrInstructionKind::ShiftLeft => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push(a << b);
+                emulator.ip += 1;
+            }
+            IrInstructionKind::ShiftRight => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push(a >> b);
+                emulator.ip += 1;
+            }
             IrInstructionKind::Or => {
                 let a;
                 let b;
@@ -621,7 +657,14 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.stack.push(a & b);
                 emulator.ip += 1;
             }
-            IrInstructionKind::Not => todo!("Not"),
+            IrInstructionKind::Not => {
+                if let Some(v) = emulator.stack.pop() {
+                    emulator.stack.push(!v);
+                } else {
+                    panic!("stack underflow");
+                }
+                emulator.ip += 1;
+            }
             IrInstructionKind::PushString => {
                 let addr = emulator.string_size;
                 let string = escape_string(op.operand.string);
