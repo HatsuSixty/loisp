@@ -357,8 +357,45 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
 
                 emulator.ip += 1;
             }
-            IrInstructionKind::Load32 => todo!("Load32"),
-            IrInstructionKind::Store32 => todo!("Store32"),
+            IrInstructionKind::Load32 => {
+                let addr;
+                if let Some(a) = emulator.stack.pop() {
+                    addr = a;
+                } else {
+                    panic!("stack underflow");
+                }
+
+                let mut bytes: [u8; 4] = [0, 0, 0, 0];
+                for i in 0..4 {
+                    bytes[i] = emulator.memory[(addr as usize) + i];
+                }
+                emulator.stack.push(i32::from_le_bytes(bytes) as i64);
+                emulator.ip += 1;
+            }
+            IrInstructionKind::Store32 => {
+                let mut addr;
+                let value: i32;
+
+                if let Some(a) = emulator.stack.pop() {
+                    addr = a;
+                } else {
+                    panic!("stack underflow");
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    value = v as i32;
+                } else {
+                    panic!("stack underflow");
+                }
+
+                let bytes = value.to_le_bytes();
+                for b in bytes {
+                    emulator.memory[addr as usize] = b;
+                    addr += 1;
+                }
+
+                emulator.ip += 1;
+            }
             IrInstructionKind::Load64 => {
                 let addr;
                 if let Some(a) = emulator.stack.pop() {
