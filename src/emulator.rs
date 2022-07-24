@@ -157,7 +157,25 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.stack.push(a * b);
                 emulator.ip += 1;
             }
-            IrInstructionKind::Division => todo!("Division"),
+            IrInstructionKind::Division => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push((a / b) as i64);
+                emulator.ip += 1;
+            }
             IrInstructionKind::Mod => {
                 let a;
                 let b;
