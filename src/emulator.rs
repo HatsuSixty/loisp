@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::*;
 use std::os::unix::io::FromRawFd;
+use std::process::exit;
 
 pub struct Emulator {
     pub args: Vec<String>,
@@ -283,7 +284,17 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
 
                         write!(file, "{}", buffer).expect("write syscall failed");
                     }
-                    _ => panic!("unsupported syscall {}", syscall_number),
+                    60 => {
+                        // SYS_exit
+                        let code;
+                        if let Some(c) = emulator.stack.pop() {
+                            code = c as i32;
+                        } else {
+                            panic!("stack underflow");
+                        }
+                        exit(code);
+                    }
+                    _ => panic!("unsupported syscall: {}", syscall_number),
                 }
                 emulator.ip += 1;
             }
