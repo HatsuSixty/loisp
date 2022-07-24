@@ -1,4 +1,4 @@
-(setvar n 100)
+(setvar n 10)
 (setvar i 0)
 
 (setvar t0 0)

@@ -77,8 +77,8 @@ pub enum IrInstructionKind {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct IrInstructionValue {
-    string: String,
-    integer: i64,
+    pub string: String,
+    pub integer: i64,
 }
 
 impl IrInstructionValue {

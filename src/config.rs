@@ -18,6 +18,7 @@ pub struct Config {
     pub silent: bool,
     pub run: ConfigRun,
     pub piped: bool,
+    pub emulate: bool,
     pub input: String,
     pub output: Option<String>,
 }
@@ -30,6 +31,7 @@ impl Config {
             piped: false,
             input: String::new(),
             output: None,
+            emulate: false,
         }
     }
 }

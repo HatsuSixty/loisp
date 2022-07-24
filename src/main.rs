@@ -6,11 +6,13 @@ mod lexer;
 mod parser;
 mod tests;
 mod types;
+mod emulator;
 
 use config::*;
 use instructions::*;
 use ir::*;
 use tests::*;
+use emulator::*;
 
 use std::env;
 use std::ffi::OsString;
@@ -18,8 +20,9 @@ use std::ffi::OsString;
 fn usage(stderr: bool) {
     let help = "Usage: loisp [FLAGS] <SUBCOMMAND>
     Subcommands:
-        build <file>       Compile <file> into an executable
-        run   <file>       Compile <file> into an executable and run the generated executable
+        build   <file>     Compile <file> into an executable
+        run     <file>     Compile <file> into an executable and run the generated executable
+        emulate <file>     Emulate <file>
         save-test <folder> Save test cases for each file in <folder>
         run-test  <folder> Run tests for each file in <folder>
         help               Prints this help to stdout and exits with 0 exit code
@@ -56,6 +59,7 @@ fn main() -> Result<(), LoispError> {
     let mut run_flags: Vec<String> = vec![];
     let mut silent = false;
     let mut piped = false;
+    let mut emulate = false;
     let mut input = String::new();
     let mut output = None;
     while args.len() > 0 {
@@ -79,6 +83,20 @@ fn main() -> Result<(), LoispError> {
                         usage(true);
                         eprintln!("ERROR: No input file was provided");
                         std::process::exit(1)
+                    }
+                    while let Some(flag) = shift(&mut args) {
+                        run_flags.push(flag);
+                    }
+                    break;
+                }
+                "emulate" => {
+                    if let Some(i) = shift(&mut args) {
+                        input = i;
+                        emulate = true;
+                    } else {
+                        usage(true);
+                        eprintln!("ERROR: No input file was provided");
+                        std::process::exit(1);
                     }
                     while let Some(flag) = shift(&mut args) {
                         run_flags.push(flag);
@@ -138,11 +156,17 @@ fn main() -> Result<(), LoispError> {
     config.piped = piped;
     config.output = output;
     config.input = input;
+    config.emulate = emulate;
 
-    if !config.silent {
+    if !config.silent && !config.emulate {
         print_info!("INFO", "Compiling `{}`", config.input);
     }
 
-    compile_file_into_executable(config)?;
+    if !config.emulate {
+        compile_file_into_executable(config)?;
+    } else {
+        emulate_file(config)?;
+    }
+
     Ok(())
 }
