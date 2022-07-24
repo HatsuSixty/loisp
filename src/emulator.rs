@@ -3,7 +3,9 @@ use super::config::*;
 use super::ir::*;
 
 use std::collections::HashMap;
+use std::fs::File;
 use std::io::*;
+use std::os::unix::io::FromRawFd;
 
 pub struct Emulator {
     pub args: Vec<String>,
@@ -62,14 +64,12 @@ impl Emulator {
         for i in ir.instructions {
             match i.kind {
                 IrInstructionKind::AllocVariable => {
-                    self
-                        .variables
+                    self.variables
                         .insert(self.variables.len(), self.variables_size);
                     self.variables_size += i.operand.integer as usize;
                 }
                 IrInstructionKind::AllocMemory => {
-                    self
-                        .memories
+                    self.memories
                         .insert(self.memories.len(), self.memories_size);
                     self.memories_size += i.operand.integer as usize;
                 }
@@ -80,6 +80,13 @@ impl Emulator {
 }
 
 pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
+    let fd1;
+    let fd2;
+    unsafe {
+        fd1 = File::from_raw_fd(1);
+        fd2 = File::from_raw_fd(2);
+    }
+
     while emulator.ip < ir.instructions.len() {
         let op = ir.instructions[emulator.ip].clone();
         match op.kind {
@@ -179,7 +186,8 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 }
 
                 match syscall_number {
-                    0 => { // SYS_read
+                    0 => {
+                        // SYS_read
                         let fd;
                         let mut buf;
                         let count;
@@ -204,7 +212,9 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
 
                         let mut read = String::new();
                         assert!(fd == 0, "unsupported file descriptor for read syscall");
-                        stdin().read_line(&mut read).expect("error performing read syscall");
+                        stdin()
+                            .read_line(&mut read)
+                            .expect("error performing read syscall");
 
                         for i in 0..count {
                             if i >= (read.as_bytes().len() as i64) {
@@ -216,6 +226,7 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                         }
                     }
                     1 => {
+                        // SYS_write
                         let fd;
                         let buf;
                         let count;
@@ -245,11 +256,14 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                             i += 1;
                         }
 
+                        let mut file;
                         match fd {
-                            1 => print!("{}", buffer),
-                            2 => eprint!("{}", buffer),
+                            1 => file = fd1.try_clone().expect("write syscall failed"),
+                            2 => file = fd2.try_clone().expect("write syscall failed"),
                             _ => panic!("unknown file descriptor"),
                         }
+
+                        write!(file, "{}", buffer).expect("write syscall failed");
                     }
                     _ => panic!("unsupported syscall {}", syscall_number),
                 }
