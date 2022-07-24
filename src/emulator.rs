@@ -184,7 +184,17 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.variables_size += op.operand.integer as usize;
                 emulator.ip += 1;
             }
-            IrInstructionKind::Load8 => todo!("Load8"),
+            IrInstructionKind::Load8 => {
+                let addr;
+                if let Some(a) = emulator.stack.pop() {
+                    addr = a;
+                } else {
+                    panic!("stack underflow");
+                }
+
+                emulator.stack.push(emulator.memory[addr as usize] as i64);
+                emulator.ip += 1;
+            }
             IrInstructionKind::Store8 => {
                 let addr;
                 let value;
@@ -311,7 +321,9 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
             IrInstructionKind::LessEqual => todo!("LessEqual"),
             IrInstructionKind::GreaterEqual => todo!("GreaterEqual"),
             IrInstructionKind::AllocMemory => {
-                emulator.memories.insert(emulator.memories.len(), emulator.memories_size);
+                emulator
+                    .memories
+                    .insert(emulator.memories.len(), emulator.memories_size);
                 emulator.memories_size += op.operand.integer as usize;
                 emulator.ip += 1;
             }
