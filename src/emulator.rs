@@ -18,6 +18,8 @@ pub struct Emulator {
     pub memories: HashMap<usize, usize>,
     pub memories_size: usize,
 
+    pub ret_stack: Vec<usize>,
+
     pub memory: Vec<u8>,
 }
 
@@ -50,7 +52,29 @@ impl Emulator {
             memories: HashMap::new(),
             memories_size: MEMORY_BUFFER_START,
 
+            ret_stack: vec![],
+
             memory: vec![0; X86_64_MEMORY_CAPACITY],
+        }
+    }
+
+    pub fn init(&mut self, ir: IrProgram) {
+        for i in ir.instructions {
+            match i.kind {
+                IrInstructionKind::AllocVariable => {
+                    self
+                        .variables
+                        .insert(self.variables.len(), self.variables_size);
+                    self.variables_size += i.operand.integer as usize;
+                }
+                IrInstructionKind::AllocMemory => {
+                    self
+                        .memories
+                        .insert(self.memories.len(), self.memories_size);
+                    self.memories_size += i.operand.integer as usize;
+                }
+                _ => {}
+            }
         }
     }
 }
@@ -88,7 +112,25 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.stack.push(a + b);
                 emulator.ip += 1;
             }
-            IrInstructionKind::Minus => todo!("Minus"),
+            IrInstructionKind::Minus => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push(a - b);
+                emulator.ip += 1;
+            }
             IrInstructionKind::Multiplication => {
                 let a;
                 let b;
@@ -177,13 +219,7 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 }
                 emulator.ip += 1;
             }
-            IrInstructionKind::AllocVariable => {
-                emulator
-                    .variables
-                    .insert(emulator.variables.len(), emulator.variables_size);
-                emulator.variables_size += op.operand.integer as usize;
-                emulator.ip += 1;
-            }
+            IrInstructionKind::AllocVariable => emulator.ip += 1,
             IrInstructionKind::Load8 => {
                 let addr;
                 if let Some(a) = emulator.stack.pop() {
@@ -260,6 +296,8 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
             IrInstructionKind::PushVariable => {
                 if let Some(addr) = emulator.variables.get(&(op.operand.integer as usize)) {
                     emulator.stack.push(*addr as i64);
+                } else {
+                    panic!("variable not found");
                 }
                 emulator.ip += 1;
             }
@@ -297,7 +335,25 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.stack.push((b == a) as i64);
                 emulator.ip += 1;
             }
-            IrInstructionKind::NotEqual => todo!("NotEqual"),
+            IrInstructionKind::NotEqual => {
+                let a;
+                let b;
+
+                if let Some(v) = emulator.stack.pop() {
+                    a = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    b = v;
+                } else {
+                    panic!("stack underflow")
+                }
+
+                emulator.stack.push((b != a) as i64);
+                emulator.ip += 1;
+            }
             IrInstructionKind::Less => {
                 let a;
                 let b;
@@ -320,16 +376,12 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
             IrInstructionKind::Greater => todo!("Greater"),
             IrInstructionKind::LessEqual => todo!("LessEqual"),
             IrInstructionKind::GreaterEqual => todo!("GreaterEqual"),
-            IrInstructionKind::AllocMemory => {
-                emulator
-                    .memories
-                    .insert(emulator.memories.len(), emulator.memories_size);
-                emulator.memories_size += op.operand.integer as usize;
-                emulator.ip += 1;
-            }
+            IrInstructionKind::AllocMemory => emulator.ip += 1,
             IrInstructionKind::PushMemory => {
                 if let Some(addr) = emulator.memories.get(&(op.operand.integer as usize)) {
                     emulator.stack.push(*addr as i64);
+                } else {
+                    panic!("memory region not found");
                 }
                 emulator.ip += 1;
             }
@@ -348,8 +400,17 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.stack.push(addr as i64);
                 emulator.ip += 1;
             }
-            IrInstructionKind::Call => todo!("Call"),
-            IrInstructionKind::Return => todo!("Return"),
+            IrInstructionKind::Call => {
+                emulator.ret_stack.push(emulator.ip + 1);
+                emulator.ip = op.operand.integer as usize;
+            }
+            IrInstructionKind::Return => {
+                if let Some(p) = emulator.ret_stack.pop() {
+                    emulator.ip = p;
+                } else {
+                    panic!("return stack underflow");
+                }
+            }
         }
     }
 }
@@ -358,6 +419,7 @@ pub fn emulate_file(config: Config) -> Result<()> {
     let ir = compile_file_into_ir(config.clone().input)?;
     let mut emulator = Emulator::new();
     emulator.args = config.run.args;
-    emulate_program(ir, &mut emulator);
+    emulator.init(ir.clone());
+    emulate_program(ir.clone(), &mut emulator);
     Ok(())
 }
