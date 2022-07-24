@@ -318,8 +318,45 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.memory[addr as usize] = value as u8;
                 emulator.ip += 1;
             }
-            IrInstructionKind::Load16 => todo!("Load16"),
-            IrInstructionKind::Store16 => todo!("Store16"),
+            IrInstructionKind::Load16 => {
+                let addr;
+                if let Some(a) = emulator.stack.pop() {
+                    addr = a;
+                } else {
+                    panic!("stack underflow");
+                }
+
+                let mut bytes: [u8; 2] = [0, 0];
+                for i in 0..2 {
+                    bytes[i] = emulator.memory[(addr as usize) + i];
+                }
+                emulator.stack.push(i16::from_le_bytes(bytes) as i64);
+                emulator.ip += 1;
+            }
+            IrInstructionKind::Store16 => {
+                let mut addr;
+                let value: i16;
+
+                if let Some(a) = emulator.stack.pop() {
+                    addr = a;
+                } else {
+                    panic!("stack underflow");
+                }
+
+                if let Some(v) = emulator.stack.pop() {
+                    value = v as i16;
+                } else {
+                    panic!("stack underflow");
+                }
+
+                let bytes = value.to_le_bytes();
+                for b in bytes {
+                    emulator.memory[addr as usize] = b;
+                    addr += 1;
+                }
+
+                emulator.ip += 1;
+            }
             IrInstructionKind::Load32 => todo!("Load32"),
             IrInstructionKind::Store32 => todo!("Store32"),
             IrInstructionKind::Load64 => {
@@ -339,7 +376,7 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
             }
             IrInstructionKind::Store64 => {
                 let mut addr;
-                let value;
+                let value: i64;
 
                 if let Some(a) = emulator.stack.pop() {
                     addr = a;
