@@ -59,8 +59,10 @@ pub fn cmd_run_return_test_case(cmd: String) -> (TestCase, bool) {
     test_case.stdout = String::from_utf8(output.stdout).unwrap().trim().to_string();
     test_case.stderr = String::from_utf8(output.stderr).unwrap().trim().to_string();
 
-    for s in cmd.trim().split(' ') {
-        test_case.args.push(s.to_string());
+    for (i, s) in cmd.trim().split(' ').enumerate() {
+        if i >= 3 {
+            test_case.args.push(s.to_string());
+        }
     }
 
     (test_case.clone(), compiled)
