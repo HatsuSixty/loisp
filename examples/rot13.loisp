@@ -15,6 +15,7 @@
 )
 
 (alloc message 255)
+(call puts "Type something: ")
 (call read (getmem message) 255)
 
 (if (=(call ?str-upper (getmem message))0)
@@ -22,6 +23,7 @@
   (block)
 )
 
+(call puts "Your message converted with the rot13 algorithm is: ")
 (setvar i 0)
 (setvar char 0)
 (while (<(getvar i)(call strlen (getmem message)))
