@@ -31,6 +31,7 @@ pub enum LoispError {
     FunctionNotFound(LexerToken),
     NoDeclarationsInFunctions(LexerToken),
     UnsupportedAtCompileTime(LexerToken),
+    InvalidMacroAtCompileTime(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -122,6 +123,11 @@ impl fmt::Display for LoispError {
                 f,
                 "{}: ERROR: Unsupported instruction at compile time: `{}`",
                 token.location, token.value.string
+            )?,
+            Self::InvalidMacroAtCompileTime(token) => write!(
+                f,
+                "{}: ERROR: Invalid macro in compile time evaluation",
+                token.location
             )?,
         }
         Ok(())
@@ -439,7 +445,24 @@ impl LoispInstruction {
 
     pub fn evaluate_at_compile_time(&self, context: &mut LoispContext) -> Result<i64, LoispError> {
         match self.kind {
-            LoispInstructionType::Expand => todo!(),
+            LoispInstructionType::Expand => {
+                if let Some(maccro) = context
+                    .macros
+                    .get(self.parameters[0].word.as_ref().unwrap())
+                {
+                    if let Some(last_instruction) = maccro.program.instructions.last() {
+                        if last_instruction.kind != IrInstructionKind::PushInteger {
+                            return Err(LoispError::InvalidMacroAtCompileTime(self.token.clone()));
+                        }
+
+                        return Ok(last_instruction.operand.integer);
+                    } else {
+                        return Err(LoispError::InvalidMacroAtCompileTime(self.token.clone()));
+                    }
+                } else {
+                    return Err(LoispError::MacroNotFound(self.parameters[0].token.clone()));
+                }
+            }
             LoispInstructionType::Plus => {
                 if self.parameters.len() < 2 {
                     return Err(LoispError::NotEnoughParameters(self.token.clone()));
