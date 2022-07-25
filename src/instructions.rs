@@ -30,6 +30,8 @@ pub enum LoispError {
     FunctionRedefinition(LexerToken),
     FunctionNotFound(LexerToken),
     NoDeclarationsInFunctions(LexerToken),
+    UnsupportedAtCompileTime(LexerToken),
+    InvalidMacroAtCompileTime(LexerToken),
 }
 
 impl fmt::Display for LoispError {
@@ -116,6 +118,16 @@ impl fmt::Display for LoispError {
                 f,
                 "{}: ERROR: Function not found: `{}`",
                 token.location, token.value.string
+            )?,
+            Self::UnsupportedAtCompileTime(token) => write!(
+                f,
+                "{}: ERROR: Unsupported instruction at compile time: `{}`",
+                token.location, token.value.string
+            )?,
+            Self::InvalidMacroAtCompileTime(token) => write!(
+                f,
+                "{}: ERROR: Invalid macro in compile time evaluation",
+                token.location
             )?,
         }
         Ok(())
@@ -428,6 +440,178 @@ impl LoispInstruction {
             kind: LoispInstructionType::Nop,
             parameters: vec![],
             token: t,
+        }
+    }
+
+    pub fn evaluate_at_compile_time(&self, context: &mut LoispContext) -> Result<i64, LoispError> {
+        match self.kind {
+            LoispInstructionType::Expand => {
+                if let Some(maccro) = context
+                    .macros
+                    .get(self.parameters[0].word.as_ref().unwrap())
+                {
+                    if let Some(last_instruction) = maccro.program.instructions.last() {
+                        if last_instruction.kind != IrInstructionKind::PushInteger {
+                            return Err(LoispError::InvalidMacroAtCompileTime(self.token.clone()));
+                        }
+
+                        return Ok(last_instruction.operand.integer);
+                    } else {
+                        return Err(LoispError::InvalidMacroAtCompileTime(self.token.clone()));
+                    }
+                } else {
+                    return Err(LoispError::MacroNotFound(self.parameters[0].token.clone()));
+                }
+            }
+            LoispInstructionType::Plus => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if !(self.parameters[0].datatype(context).unwrap() == LoispDatatype::Integer
+                    && self.parameters[1].datatype(context).unwrap() == LoispDatatype::Integer)
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                let a = if self.parameters[0].is_instruction_return() {
+                    self.parameters[0]
+                        .clone()
+                        .instruction_return
+                        .unwrap()
+                        .evaluate_at_compile_time(context)?
+                } else {
+                    self.parameters[0].clone().integer.unwrap()
+                };
+
+                let b = if self.parameters[1].is_instruction_return() {
+                    self.parameters[1]
+                        .clone()
+                        .instruction_return
+                        .unwrap()
+                        .evaluate_at_compile_time(context)?
+                } else {
+                    self.parameters[1].clone().integer.unwrap()
+                };
+
+                return Ok(a + b);
+            }
+            LoispInstructionType::Minus => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if !(self.parameters[0].datatype(context).unwrap() == LoispDatatype::Integer
+                    && self.parameters[1].datatype(context).unwrap() == LoispDatatype::Integer)
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                let a = if self.parameters[0].is_instruction_return() {
+                    self.parameters[0]
+                        .clone()
+                        .instruction_return
+                        .unwrap()
+                        .evaluate_at_compile_time(context)?
+                } else {
+                    self.parameters[0].clone().integer.unwrap()
+                };
+
+                let b = if self.parameters[1].is_instruction_return() {
+                    self.parameters[1]
+                        .clone()
+                        .instruction_return
+                        .unwrap()
+                        .evaluate_at_compile_time(context)?
+                } else {
+                    self.parameters[1].clone().integer.unwrap()
+                };
+
+                return Ok(a - b);
+            }
+            LoispInstructionType::Multiplication => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if !(self.parameters[0].datatype(context).unwrap() == LoispDatatype::Integer
+                    && self.parameters[1].datatype(context).unwrap() == LoispDatatype::Integer)
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                let a = if self.parameters[0].is_instruction_return() {
+                    self.parameters[0]
+                        .clone()
+                        .instruction_return
+                        .unwrap()
+                        .evaluate_at_compile_time(context)?
+                } else {
+                    self.parameters[0].clone().integer.unwrap()
+                };
+
+                let b = if self.parameters[1].is_instruction_return() {
+                    self.parameters[1]
+                        .clone()
+                        .instruction_return
+                        .unwrap()
+                        .evaluate_at_compile_time(context)?
+                } else {
+                    self.parameters[1].clone().integer.unwrap()
+                };
+
+                return Ok(a * b);
+            }
+            LoispInstructionType::Division => {
+                if self.parameters.len() < 2 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 2 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if !(self.parameters[0].datatype(context).unwrap() == LoispDatatype::Integer
+                    && self.parameters[1].datatype(context).unwrap() == LoispDatatype::Integer)
+                {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                let a = if self.parameters[0].is_instruction_return() {
+                    self.parameters[0]
+                        .clone()
+                        .instruction_return
+                        .unwrap()
+                        .evaluate_at_compile_time(context)?
+                } else {
+                    self.parameters[0].clone().integer.unwrap()
+                };
+
+                let b = if self.parameters[1].is_instruction_return() {
+                    self.parameters[1]
+                        .clone()
+                        .instruction_return
+                        .unwrap()
+                        .evaluate_at_compile_time(context)?
+                } else {
+                    self.parameters[1].clone().integer.unwrap()
+                };
+
+                return Ok(a / b);
+            }
+            _ => return Err(LoispError::UnsupportedAtCompileTime(self.token.clone())),
         }
     }
 
@@ -1458,6 +1642,17 @@ impl LoispInstruction {
                     ));
                 }
 
+                let alloc;
+                if self.parameters[1].is_instruction_return() {
+                    alloc = self.parameters[1]
+                        .clone()
+                        .instruction_return
+                        .unwrap()
+                        .evaluate_at_compile_time(context)?;
+                } else {
+                    alloc = self.parameters[1].integer.unwrap();
+                }
+
                 if let Some(_) = context
                     .memories
                     .get(&self.parameters[0].clone().word.unwrap())
@@ -1466,13 +1661,9 @@ impl LoispInstruction {
                         self.parameters[0].token.clone(),
                     ));
                 } else {
-                    if self.parameters[1].is_instruction_return() {
-                        return Err(LoispError::CantEvaluateAtCompileTime(self.token.clone()));
-                    }
-
                     let memory = LoispMemory {
                         id: context.memory_count,
-                        alloc: self.parameters[1].integer.unwrap() as usize,
+                        alloc: alloc as usize,
                     };
 
                     if context.inside_fun {
@@ -1486,8 +1677,7 @@ impl LoispInstruction {
                 ir_push(
                     IrInstruction {
                         kind: IrInstructionKind::AllocMemory,
-                        operand: IrInstructionValue::new()
-                            .integer(self.parameters[1].integer.unwrap()),
+                        operand: IrInstructionValue::new().integer(alloc),
                     },
                     ir,
                 );
