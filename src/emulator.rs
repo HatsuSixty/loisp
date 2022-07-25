@@ -3,9 +3,7 @@ use super::config::*;
 use super::ir::*;
 
 use std::collections::HashMap;
-use std::fs::File;
 use std::io::*;
-use std::os::unix::io::FromRawFd;
 use std::process::exit;
 
 pub struct Emulator {
@@ -81,12 +79,8 @@ impl Emulator {
 }
 
 pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
-    let fd1;
-    let fd2;
-    unsafe {
-        fd1 = File::from_raw_fd(1);
-        fd2 = File::from_raw_fd(2);
-    }
+    let mut fd1 = stdout();
+    let mut fd2 = stderr();
 
     while emulator.ip < ir.instructions.len() {
         let op = ir.instructions[emulator.ip].clone();
@@ -275,14 +269,17 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                             i += 1;
                         }
 
-                        let mut file;
                         match fd {
-                            1 => file = fd1.try_clone().expect("write syscall failed"),
-                            2 => file = fd2.try_clone().expect("write syscall failed"),
+                            1 => {
+                                write!(fd1, "{}", buffer).expect("write syscall failed");
+                                fd1.flush().unwrap();
+                            }
+                            2 => {
+                                write!(fd2, "{}", buffer).expect("write syscall failed");
+                                fd2.flush().unwrap();
+                            }
                             _ => panic!("unknown file descriptor"),
                         }
-
-                        write!(file, "{}", buffer).expect("write syscall failed");
                     }
                     60 => {
                         // SYS_exit

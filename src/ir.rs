@@ -7,7 +7,8 @@ use super::types::*;
 use super::print_info;
 
 use std::fs;
-use std::io::*;
+use std::io;
+use std::io::Write;
 
 static IR_ASSERT_ENABLED: bool = false;
 static X86_64_RET_STACK_CAP: usize = 65536;
@@ -139,7 +140,7 @@ impl IrInstruction {
         &self,
         f: &mut fs::File,
         context: &mut IrContext,
-    ) -> Result<()> {
+    ) -> io::Result<()> {
         use IrInstructionKind::*;
 
         match self.kind {
@@ -445,7 +446,7 @@ impl IrProgram {
         output: String,
         config: Config,
         context: &mut IrContext,
-    ) -> Result<()> {
+    ) -> io::Result<()> {
         if !config.silent {
             print_info!("INFO", "Generating `{}`", output);
         }
@@ -540,7 +541,7 @@ pub fn compile_file_into_existing_ir(
     f: String,
     ir: &mut IrProgram,
     context: &mut LoispContext,
-) -> Result<()> {
+) -> io::Result<()> {
     let source = fs::read_to_string(f.as_str())?;
     let lexer = Lexer::from_chars(source.chars(), f);
 
@@ -562,7 +563,7 @@ pub fn compile_file_into_existing_ir(
     Ok(())
 }
 
-pub fn compile_file_into_ir(f: String) -> Result<IrProgram> {
+pub fn compile_file_into_ir(f: String) -> io::Result<IrProgram> {
     let source = fs::read_to_string(f.as_str())?;
     let lexer = Lexer::from_chars(source.chars(), f);
     let mut context = LoispContext::new();
@@ -586,14 +587,26 @@ pub fn compile_file_into_ir(f: String) -> Result<IrProgram> {
     Ok(ir)
 }
 
-pub fn compile_file_into_assembly(i: &str, o: &str, config: Config) -> Result<()> {
+pub fn compile_string_into_ir(string: String, context: &mut LoispContext, f: String) -> Result<IrProgram, LoispError> {
+    let lexer = Lexer::from_chars(string.chars(), f);
+    let instructions = construct_instructions_from_tokens(&mut lexer.peekable())?;
+
+    let mut ir = IrProgram::new();
+    for i in instructions {
+        i.to_ir(&mut ir, context)?;
+    }
+
+    Ok(ir)
+}
+
+pub fn compile_file_into_assembly(i: &str, o: &str, config: Config) -> io::Result<()> {
     let mut context = IrContext::new();
     let ir = compile_file_into_ir(i.to_string())?;
     ir.to_fasm_linux_x86_64_assembly(o.to_string(), config.clone(), &mut context)?;
     Ok(())
 }
 
-pub fn compile_file_into_executable(config: Config) -> Result<()> {
+pub fn compile_file_into_executable(config: Config) -> io::Result<()> {
     let config_output: String;
     {
         let c = config.clone();

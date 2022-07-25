@@ -7,12 +7,14 @@ mod parser;
 mod tests;
 mod types;
 mod emulator;
+mod repl;
 
 use config::*;
 use instructions::*;
 use ir::*;
 use tests::*;
 use emulator::*;
+use repl::*;
 
 use std::env;
 use std::ffi::OsString;
@@ -50,122 +52,120 @@ fn main() -> Result<(), LoispError> {
     shift(&mut args);
 
     if args.len() < 1 {
-        usage(true);
-        eprintln!("ERROR: No subcommand was provided");
-        std::process::exit(1)
-    }
-
-    let mut run = false;
-    let mut run_flags: Vec<String> = vec![];
-    let mut silent = false;
-    let mut piped = false;
-    let mut emulate = false;
-    let mut input = String::new();
-    let mut output = None;
-    while args.len() > 0 {
-        if let Some(arg) = shift(&mut args) {
-            match arg.as_str() {
-                "build" => {
-                    if let Some(i) = shift(&mut args) {
-                        input = i
-                    } else {
-                        usage(true);
-                        eprintln!("ERROR: No input file was provided");
-                        std::process::exit(1)
+        start_repl();
+    } else {
+        let mut run = false;
+        let mut run_flags: Vec<String> = vec![];
+        let mut silent = false;
+        let mut piped = false;
+        let mut emulate = false;
+        let mut input = String::new();
+        let mut output = None;
+        while args.len() > 0 {
+            if let Some(arg) = shift(&mut args) {
+                match arg.as_str() {
+                    "build" => {
+                        if let Some(i) = shift(&mut args) {
+                            input = i
+                        } else {
+                            usage(true);
+                            eprintln!("ERROR: No input file was provided");
+                            std::process::exit(1)
+                        }
+                        break;
                     }
-                    break;
-                }
-                "run" => {
-                    if let Some(i) = shift(&mut args) {
-                        input = i;
-                        run = true
-                    } else {
-                        usage(true);
-                        eprintln!("ERROR: No input file was provided");
-                        std::process::exit(1)
+                    "run" => {
+                        if let Some(i) = shift(&mut args) {
+                            input = i;
+                            run = true
+                        } else {
+                            usage(true);
+                            eprintln!("ERROR: No input file was provided");
+                            std::process::exit(1)
+                        }
+                        while let Some(flag) = shift(&mut args) {
+                            run_flags.push(flag);
+                        }
+                        break;
                     }
-                    while let Some(flag) = shift(&mut args) {
-                        run_flags.push(flag);
+                    "emulate" => {
+                        if let Some(i) = shift(&mut args) {
+                            input = i;
+                            emulate = true;
+                        } else {
+                            usage(true);
+                            eprintln!("ERROR: No input file was provided");
+                            std::process::exit(1);
+                        }
+                        while let Some(flag) = shift(&mut args) {
+                            run_flags.push(flag);
+                        }
+                        break;
                     }
-                    break;
-                }
-                "emulate" => {
-                    if let Some(i) = shift(&mut args) {
-                        input = i;
-                        emulate = true;
-                    } else {
-                        usage(true);
-                        eprintln!("ERROR: No input file was provided");
-                        std::process::exit(1);
+                    "save-test" => {
+                        if let Some(i) = shift(&mut args) {
+                            save_tests_for_folder(i)?;
+                            std::process::exit(0);
+                        } else {
+                            usage(true);
+                            eprintln!("ERROR: No input folder was provided");
+                            std::process::exit(1);
+                        }
                     }
-                    while let Some(flag) = shift(&mut args) {
-                        run_flags.push(flag);
+                    "run-test" => {
+                        if let Some(i) = shift(&mut args) {
+                            run_tests_for_folder(i)?;
+                            std::process::exit(0);
+                        } else {
+                            usage(true);
+                            eprintln!("ERROR: No input folder was provided");
+                            std::process::exit(1);
+                        }
                     }
-                    break;
-                }
-                "save-test" => {
-                    if let Some(i) = shift(&mut args) {
-                        save_tests_for_folder(i)?;
+                    "help" => {
+                        usage(false);
                         std::process::exit(0);
-                    } else {
-                        usage(true);
-                        eprintln!("ERROR: No input folder was provided");
-                        std::process::exit(1);
                     }
-                }
-                "run-test" => {
-                    if let Some(i) = shift(&mut args) {
-                        run_tests_for_folder(i)?;
-                        std::process::exit(0);
-                    } else {
-                        usage(true);
-                        eprintln!("ERROR: No input folder was provided");
-                        std::process::exit(1);
+                    "-s" => {
+                        silent = true;
+                        piped = true
                     }
-                }
-                "help" => {
-                    usage(false);
-                    std::process::exit(0);
-                }
-                "-s" => {
-                    silent = true;
-                    piped = true
-                }
-                "-o" => {
-                    if let Some(o) = shift(&mut args) {
-                        output = Some(o)
-                    } else {
+                    "-o" => {
+                        if let Some(o) = shift(&mut args) {
+                            output = Some(o)
+                        } else {
+                            usage(true);
+                            eprintln!("ERROR: No output file was provided");
+                            std::process::exit(1)
+                        }
+                    }
+                    _ => {
                         usage(true);
-                        eprintln!("ERROR: No output file was provided");
+                        eprintln!("ERROR: Unknown subcommand: {}", arg);
                         std::process::exit(1)
                     }
-                }
-                _ => {
-                    usage(true);
-                    eprintln!("ERROR: Unknown subcommand: {}", arg);
-                    std::process::exit(1)
                 }
             }
         }
-    }
 
-    let mut config = Config::new();
-    config.run.run = run;
-    config.run.args = run_flags;
-    config.silent = silent;
-    config.piped = piped;
-    config.output = output;
-    config.input = input;
-    config.emulate = emulate;
+        let mut config = Config::new();
+        config.run.run = run;
+        config.run.args = run_flags;
+        config.silent = silent;
+        config.piped = piped;
+        config.output = output;
+        config.input = input;
+        config.emulate = emulate;
 
-    if !config.silent && !config.emulate {
-        print_info!("INFO", "Compiling `{}`", config.input);
-    }
+        if !config.silent && !config.emulate {
+            print_info!("INFO", "Compiling `{}`", config.input);
+        }
 
-    if !config.emulate {
-        compile_file_into_executable(config)?;
-    } else {
-        emulate_file(config)?;
+        if !config.emulate {
+            compile_file_into_executable(config)?;
+        } else {
+            emulate_file(config)?;
+        }
     }
 
     Ok(())
