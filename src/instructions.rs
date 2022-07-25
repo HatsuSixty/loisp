@@ -446,6 +446,18 @@ impl LoispInstruction {
     pub fn evaluate_at_compile_time(&self, context: &mut LoispContext) -> Result<i64, LoispError> {
         match self.kind {
             LoispInstructionType::Expand => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Word {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
                 if let Some(maccro) = context
                     .macros
                     .get(self.parameters[0].word.as_ref().unwrap())
