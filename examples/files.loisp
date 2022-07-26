@@ -1,0 +1,59 @@
+(include "std.loisp")
+
+(setvar file "test.txt")
+(setvar string "Hwllo, Oorld!\n")
+
+(defun writef
+  (setvar fd
+    (syscall
+      (expand SYS_openat)
+      (expand AT_FDCWD)
+      (castint (getvar file))
+      (|
+        (expand O_CREAT)
+        (|
+        (expand O_WRONLY)
+        (expand O_TRUNC)
+        )
+      )
+      420
+    )
+  )
+
+  (if (< (getvar fd) 0)
+    (call fputs 2 "ERROR: Could not open file for whatever reason\n")
+    (block)
+  )
+
+  (call fputs (getvar fd) (getvar string))
+
+  (syscall (expand SYS_close) (getvar fd))
+)
+
+(defun readf
+  (alloc buffer 225)
+
+  (setvar fd
+    (syscall
+      (expand SYS_openat)
+      (expand AT_FDCWD)
+      (castint (getvar file))
+      (expand O_RDONLY)
+      420
+    )
+  )
+
+  (syscall
+    (expand SYS_read)
+    (getvar fd)
+    (castint (getmem buffer))
+    (call strlen (getvar string))
+  )
+
+  (syscall (expand SYS_close) (getvar fd))
+
+  (call puts (getmem buffer))
+)
+
+(call writef)
+(call readf)
