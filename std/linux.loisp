@@ -312,3 +312,11 @@
 (macro SYS_process_vm_writev 311)
 (macro SYS_kcmp 312)
 (macro SYS_finit_module 313)
+
+(macro AT_FDCWD -100)
+
+(macro O_RDONLY  0)
+(macro O_WRONLY  1)
+(macro O_RDWR    2)
+(macro O_CREAT  64)
+(macro O_TRUNC 512)
