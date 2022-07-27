@@ -1,0 +1,17 @@
+(include "std.loisp")
+
+(macro SUNDAY    (increment 1))
+(macro MONDAY    (increment 1))
+(macro TUESDAY   (increment 1))
+(macro WEDNESDAY (increment 1))
+(macro THURSDAY  (increment 1))
+(macro FRIDAY    (increment 1))
+(macro SATURDAY  (reset))
+
+(call puts "SUNDAY: ")    (print (expand SUNDAY))
+(call puts "MONDAY: ")    (print (expand MONDAY))
+(call puts "TUESDAY: ")   (print (expand TUESDAY))
+(call puts "WEDNESDAY: ") (print (expand WEDNESDAY))
+(call puts "THURSDAY: ")  (print (expand THURSDAY))
+(call puts "FRIDAY: ")    (print (expand FRIDAY))
+(call puts "SATURDAY: ")  (print (expand SATURDAY))
