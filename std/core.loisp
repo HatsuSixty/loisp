@@ -8,3 +8,7 @@
 (macro sizeof-u32 4)
 (macro sizeof-u16 2)
 (macro sizeof-u8  1)
+
+(macro sizeof-ptr (expand sizeof-u64))
+(macro sizeof-bool(expand sizeof-u64))
+(macro sizeof-int (expand sizeof-u64))
