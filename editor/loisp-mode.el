@@ -43,7 +43,7 @@
 
 ;; Keywords are instructions that do something more than just generating ir
 (defconst loisp-keywords
-    '("syscall" "setvar" "getvar" "chvar" "while" "if" "block" "ptrto" "alloc" "getmem" "macro" "expand" "pop" "include" "defun" "call"))
+  '("syscall" "setvar" "getvar" "chvar" "while" "if" "block" "ptrto" "alloc" "getmem" "macro" "expand" "pop" "include" "defun" "call" "increment" "reset"))
 
 (defun loisp-wrap-word-rx (s)
   (concat "\\<" s "\\>"))
