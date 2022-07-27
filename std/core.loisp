@@ -3,3 +3,8 @@
 (macro stderr 2)
 
 (macro NULL (castptr 0))
+
+(macro sizeof-u64 8)
+(macro sizeof-u32 4)
+(macro sizeof-u16 2)
+(macro sizeof-u8  1)
