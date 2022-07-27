@@ -192,6 +192,8 @@ pub enum LoispInstructionType {
     Include,
     DefFun,
     Call,
+    Increment,
+    Reset,
 }
 
 #[derive(Debug, Clone)]
@@ -275,6 +277,7 @@ pub struct LoispContext {
     pub memory_count: usize,
     pub variable_count: usize,
     pub inside_fun: bool,
+    pub iota: i64,
 }
 
 impl LoispContext {
@@ -289,6 +292,7 @@ impl LoispContext {
             memory_count: 0,
             variable_count: 0,
             inside_fun: false,
+            iota: 0,
         }
     }
 
@@ -711,6 +715,8 @@ impl LoispInstruction {
                     return Nothing;
                 }
             }
+            LoispInstructionType::Increment => Integer,
+            LoispInstructionType::Reset => Integer,
         }
     }
 
@@ -2187,6 +2193,55 @@ impl LoispInstruction {
                         self.parameters[0].token.clone(),
                     ));
                 }
+            }
+            Increment => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                if self.parameters[0].datatype(context).unwrap() != LoispDatatype::Integer {
+                    return Err(LoispError::MismatchedTypes(self.token.clone()));
+                }
+
+                let increment;
+                if self.parameters[0].is_instruction_return() {
+                    increment = self.parameters[0]
+                        .clone()
+                        .instruction_return
+                        .unwrap()
+                        .evaluate_at_compile_time(context)?;
+                } else {
+                    increment = self.parameters[0].integer.unwrap();
+                }
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::PushInteger,
+                        operand: IrInstructionValue::new().integer(context.iota),
+                    },
+                    ir,
+                );
+
+                context.iota += increment;
+            }
+            Reset => {
+                if self.parameters.len() != 0 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::PushInteger,
+                        operand: IrInstructionValue::new().integer(context.iota),
+                    },
+                    ir,
+                );
+
+                context.iota = 0;
             }
             Nop => {}
         }
