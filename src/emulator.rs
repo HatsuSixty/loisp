@@ -223,19 +223,22 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                             panic!("stack underflow");
                         }
 
-                        let mut read = String::new();
-                        assert!(fd == 0, "unsupported file descriptor for read syscall");
-                        stdin()
-                            .read_line(&mut read)
-                            .expect("error performing read syscall");
+                        if fd != 0 {
+                            emulator.stack.push(77);
+                        } else {
+                            let mut read = String::new();
+                            stdin()
+                                .read_line(&mut read)
+                                .expect("error performing read syscall");
 
-                        for i in 0..count {
-                            if i >= (read.as_bytes().len() as i64) {
-                                emulator.memory[buf as usize] = 0;
-                            } else {
-                                emulator.memory[buf as usize] = read.as_bytes()[i as usize];
+                            for i in 0..count {
+                                if i >= (read.as_bytes().len() as i64) {
+                                    emulator.memory[buf as usize] = 0;
+                                } else {
+                                    emulator.memory[buf as usize] = read.as_bytes()[i as usize];
+                                }
+                                buf += 1;
                             }
-                            buf += 1;
                         }
                     }
                     1 => {
@@ -278,7 +281,7 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                                 write!(fd2, "{}", buffer).expect("write syscall failed");
                                 fd2.flush().unwrap();
                             }
-                            _ => panic!("unknown file descriptor"),
+                            _ => emulator.stack.push(77),
                         }
                     }
                     60 => {
