@@ -11,7 +11,7 @@ pub enum LexerTokenKind {
 }
 
 pub fn is_special_token(c: char) -> bool {
-    c == '(' || c == ')' || c == ' ' || c == '\n' || c == '\r'
+    c == '(' || c == ')' || c == ' ' || c == '\n' || c == '\r' || c == '#' || c == '"'
 }
 
 #[derive(Debug, Clone)]
