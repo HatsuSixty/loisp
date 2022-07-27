@@ -69,6 +69,23 @@ The available instructios are the following:
 | `include`           | Compile a file given as parameter and bring everything from that file into the current scope                                            |
 | `defun`             | Create a function with the name given as first parameter that executes the instructions given as rest of the parameters                 |
 | `call`              | Call a function with the name given as first parameter. If the user provide more parameters, they will be pushed into the runtime stack |
+| `increment`         | See [Enumerations](#Enumerations)                                                                                                       |
+| `reset`             | See [Enumerations](#Enumerations)                                                                                                       |
+
+## Enumerations
+
+There are two instructions available for enumerations, `increment` and `reset`. They work the following way, at compile time, the compiler maintain a counter called `iota` (just like Go's iota), `increment` will return the internal `iota` and then increment it by the value given as parameter, and `reset` will return the internal `iota`, and reset its value. Combining `increment`, `reset` and macros, you can create enumerations.
+
+### Example
+```lisp
+(macro MONDAY    (increment 1))
+(macro TUESDAY   (increment 1))
+(macro WEDNESDAY (increment 1))
+(macro THURSDAY  (increment 1))
+(macro FRIDAY    (increment 1))
+(macro SATURDAY  (increment 1))
+(macro SUNDAY    (reset))
+```
 
 ## Control Flow
 
