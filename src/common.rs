@@ -12,12 +12,16 @@ macro_rules! print_info {
 }
 
 pub fn file_name_without_extension(f: String) -> String {
+    let startwithdot: bool = f.starts_with('.');
     let mut split_by_dot: Vec<&str> = f.split('.').collect();
     split_by_dot.pop();
     let mut returnn = String::new();
     for s in split_by_dot {
         returnn = format!("{} {}", returnn, s);
     }
+
+    if startwithdot { returnn = returnn.trim().to_string(); returnn.insert(0, '.') }
+
     return returnn.trim().to_string();
 }
 
