@@ -1,0 +1,61 @@
+(include "std.loisp")
+
+(macro N 100)
+
+(macro User.name   (increment (expand sizeof-ptr)))
+(macro User.age    (increment (expand sizeof-u64)))
+(macro sizeof-User (reset))
+
+(alloc array (*(expand sizeof-User)(expand N)))
+
+(setvar age 10)
+(setvar i 0)
+(while (< (getvar i) (*(expand sizeof-User)(expand N)))
+  (if (= (getvar i) 512)
+    (chvar age 20)
+    (block)
+  )
+
+  (store64
+    (castptr (+
+        (+(getvar i)(castint (getmem array)))
+        (expand User.name)
+      )
+    )
+    (castint "Jeff\n")
+  )
+  (store64
+    (castptr (+
+        (+(getvar i)(castint (getmem array)))
+        (expand User.age)
+      )
+    )
+    (getvar age)
+  )
+  (chvar i (+(getvar i)(expand sizeof-User)))
+)
+
+(chvar i 0)
+(while (< (getvar i) (*(expand sizeof-User)(expand N)))
+  (call puts "NAME: ")
+  (call puts (load64
+    (castptr (+
+        (+(getvar i)(castint (getmem array)))
+        (expand User.name)
+      )
+    )
+  ))
+
+  (call puts "AGE: ")
+  (print (load64
+    (castptr (+
+        (+(getvar i)(castint (getmem array)))
+        (expand User.age)
+      )
+    )
+  ))
+  (call puts "\n")
+  (chvar i (+(getvar i)(expand sizeof-User)))
+)
+
+(call puts "OK!\n")
