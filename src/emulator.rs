@@ -683,6 +683,9 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                     emulator.memory[emulator.string_size] = c as u8;
                     emulator.string_size += 1;
                 }
+                emulator.memory[emulator.string_size] = 0;
+                emulator.string_size += 1;
+
                 emulator.stack.push(addr as i64);
                 emulator.ip += 1;
             }
