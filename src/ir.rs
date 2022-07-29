@@ -73,6 +73,8 @@ pub enum IrInstructionKind {
     PushString,
     Call,
     Return,
+    CastPointer,
+    CastInt,
 }
 
 #[derive(Debug, Clone)]
@@ -387,6 +389,8 @@ impl IrInstruction {
                 writeln!(f, "mov rbx, QWORD [rax]")?;
                 writeln!(f, "jmp rbx")?;
             }
+            CastPointer => {}
+            CastInt => {}
             Nop => {}
         }
 
@@ -420,6 +424,8 @@ impl IrInstruction {
             Equal => return Integer,
             NotEqual => return Integer,
             PushString => return String,
+            CastPointer => return Pointer,
+            CastInt => return Integer,
             _ => return Nothing,
         }
     }

@@ -194,6 +194,7 @@ pub enum LoispInstructionType {
     Call,
     Increment,
     Reset,
+    TypeOf,
 }
 
 #[derive(Debug, Clone)]
@@ -466,12 +467,34 @@ impl LoispInstruction {
                     .macros
                     .get(self.parameters[0].word.as_ref().unwrap())
                 {
-                    if let Some(last_instruction) = maccro.program.instructions.last() {
-                        if last_instruction.kind != IrInstructionKind::PushInteger {
-                            return Err(LoispError::InvalidMacroAtCompileTime(self.token.clone()));
+                    if let Some(last) = maccro.program.instructions.last() {
+                        if last.kind != IrInstructionKind::PushInteger {
+                            if last.kind == IrInstructionKind::CastInt
+                                || last.kind == IrInstructionKind::CastPointer
+                            {
+                                let mut insts = maccro.program.instructions.clone();
+                                insts.pop();
+                                if let Some(r#final) = insts.last() {
+                                    if r#final.kind != IrInstructionKind::PushInteger {
+                                        return Ok(r#final.operand.integer);
+                                    } else {
+                                        return Err(LoispError::InvalidMacroAtCompileTime(
+                                            self.token.clone(),
+                                        ));
+                                    }
+                                } else {
+                                    return Err(LoispError::InvalidMacroAtCompileTime(
+                                        self.token.clone(),
+                                    ));
+                                }
+                            } else {
+                                return Err(LoispError::InvalidMacroAtCompileTime(
+                                    self.token.clone(),
+                                ));
+                            }
+                        } else {
+                            return Ok(last.operand.integer);
                         }
-
-                        return Ok(last_instruction.operand.integer);
                     } else {
                         return Err(LoispError::InvalidMacroAtCompileTime(self.token.clone()));
                     }
@@ -717,6 +740,7 @@ impl LoispInstruction {
             }
             LoispInstructionType::Increment => Integer,
             LoispInstructionType::Reset => Integer,
+            LoispInstructionType::TypeOf => String,
         }
     }
 
@@ -1749,6 +1773,13 @@ impl LoispInstruction {
                 }
 
                 self.push_parameters(ir, context, true)?;
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::CastPointer,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                );
             }
             CastInt => {
                 if self.parameters.len() < 1 {
@@ -1760,6 +1791,13 @@ impl LoispInstruction {
                 }
 
                 self.push_parameters(ir, context, true)?;
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::CastInt,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                );
             }
             ShiftLeft => {
                 if self.parameters.len() < 2 {
@@ -2242,6 +2280,35 @@ impl LoispInstruction {
                 );
 
                 context.iota = 0;
+            }
+            TypeOf => {
+                if self.parameters.len() < 1 {
+                    return Err(LoispError::NotEnoughParameters(self.token.clone()));
+                }
+
+                if self.parameters.len() > 1 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                let datatype;
+                {
+                    let mut newir = ir.clone();
+                    self.push_parameters(&mut newir, context, true)?;
+
+                    if let Some(last) = newir.instructions.last() {
+                        datatype = last.get_loisp_datatype();
+                    } else {
+                        datatype = LoispDatatype::Nothing;
+                    }
+                }
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::PushString,
+                        operand: IrInstructionValue::new().string(format!("{:?}", datatype)),
+                    },
+                    ir,
+                );
             }
             Nop => {}
         }

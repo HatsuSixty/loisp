@@ -86,6 +86,7 @@ pub fn token_to_instruction_kind(token: LexerToken) -> Result<LoispInstructionTy
         "call" => Ok(LoispInstructionType::Call),
         "increment" => Ok(LoispInstructionType::Increment),
         "reset" => Ok(LoispInstructionType::Reset),
+        "typeof" => Ok(LoispInstructionType::TypeOf),
         _ => Err(ParserError::UnknownInstruction(token.clone())),
     }
 }

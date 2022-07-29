@@ -700,6 +700,8 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                     panic!("return stack underflow");
                 }
             }
+            IrInstructionKind::CastPointer => emulator.ip += 1,
+            IrInstructionKind::CastInt => emulator.ip += 1,
         }
     }
 }
