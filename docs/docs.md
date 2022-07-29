@@ -71,6 +71,7 @@ The available instructios are the following:
 | `call`              | Call a function with the name given as first parameter. If the user provide more parameters, they will be pushed into the runtime stack |
 | `increment`         | See [Enumerations](#Enumerations)                                                                                                       |
 | `reset`             | See [Enumerations](#Enumerations)                                                                                                       |
+| `typeof`            | Return a string containing the name of the type of the given parameter                                                                  |
 
 ## Enumerations
 
