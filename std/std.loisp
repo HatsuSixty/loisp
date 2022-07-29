@@ -55,6 +55,16 @@
   (call fputs (expand stdout) (getvar $1))
 )
 
+### eputs
+## Parameters
+# $1 -> Integer
+## Write the string given as parameter to stderr
+(defun eputs
+  (setvar $1 0)
+  (pop $1)
+  (call fputs (expand stderr) (getvar $1))
+)
+
 ### fputc
 ## Parameters
 # $1 -> Integer
@@ -77,6 +87,16 @@
   (setvar $1 0)
   (pop $1)
   (call fputc (expand stdout) (getvar $1))
+)
+
+### eputc
+## Parameters
+# $1 -> Integer
+## Write the character given as parameter to stdout
+(defun eputc
+  (setvar $1 0)
+  (pop $1)
+  (call fputc (expand stderr) (getvar $1))
 )
 
 ### read
@@ -200,4 +220,15 @@
     (chvar i (+(getvar i)1))
   )
   (getmem str)
+)
+
+### exit
+## Parameters
+# $1 -> Integer
+## Exit the program with $1 code
+(defun exit
+  (setvar code 0)
+  (pop code)
+
+  (syscall (expand SYS_exit) (getvar code))
 )
