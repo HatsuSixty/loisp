@@ -76,6 +76,8 @@ pub enum IrInstructionKind {
     Return,
     CastPointer,
     CastInt,
+    Argc,
+    Argv,
 }
 
 #[derive(Debug, Clone)]
@@ -392,6 +394,16 @@ impl IrInstruction {
             }
             CastPointer => {}
             CastInt => {}
+            Argc => {
+                writeln!(f, "mov rax, [args_ptr]\n")?;
+                writeln!(f, "mov rax, [rax]\n")?;
+                writeln!(f, "push rax\n")?;
+            }
+            Argv => {
+                writeln!(f, "mov rax, [args_ptr]\n")?;
+                writeln!(f, "add rax, 8\n")?;
+                writeln!(f, "push rax\n")?;
+            }
             Nop => {}
         }
 
@@ -442,6 +454,8 @@ impl IrInstruction {
             Return => return Nothing,
             CastPointer => return Pointer,
             CastInt => return Integer,
+            Argc => return Integer,
+            Argv => return Pointer,
         }
     }
 }
@@ -517,6 +531,7 @@ impl IrProgram {
         writeln!(buffer, "ret")?;
         writeln!(buffer, "entry start")?;
         writeln!(buffer, "start:")?;
+        writeln!(buffer, "mov [args_ptr], rsp")?;
         writeln!(buffer, "mov rax, ret_stack_end")?;
         writeln!(buffer, "mov [ret_stack_rsp], rax")?;
 
@@ -552,6 +567,7 @@ impl IrProgram {
             writeln!(buffer, "mem_{}: rb {}", m.ident, m.alloc)?;
         }
 
+        writeln!(buffer, "args_ptr: rb 8")?;
         writeln!(buffer, "ret_stack_rsp: rb 8")?;
         writeln!(buffer, "ret_stack: rb {}", X86_64_RET_STACK_CAP)?;
         writeln!(buffer, "ret_stack_end:")?;

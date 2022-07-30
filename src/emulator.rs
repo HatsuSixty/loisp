@@ -702,6 +702,8 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
             }
             IrInstructionKind::CastPointer => emulator.ip += 1,
             IrInstructionKind::CastInt => emulator.ip += 1,
+            IrInstructionKind::Argc => todo!(),
+            IrInstructionKind::Argv => todo!(),
         }
     }
 }
