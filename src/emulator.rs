@@ -35,8 +35,14 @@ static VARIABLE_BUFFER_START: usize = STRING_BUFFER_START + STRING_BUFFER_CAPACI
 static MEMORY_BUFFER_CAPACITY: usize = 640000; // should be enough for everyone
 static MEMORY_BUFFER_START: usize = VARIABLE_BUFFER_START + VARIABLE_BUFFER_CAPACITY;
 
-static X86_64_MEMORY_CAPACITY: usize =
-    NULL_PTR_PADDING + STRING_BUFFER_CAPACITY + VARIABLE_BUFFER_CAPACITY + MEMORY_BUFFER_CAPACITY;
+static ARGS_BUFFER_CAPACITY: usize = 640000; // should be enough for everyone
+static ARGS_BUFFER_START: usize = MEMORY_BUFFER_START + MEMORY_BUFFER_CAPACITY;
+
+static X86_64_MEMORY_CAPACITY: usize = NULL_PTR_PADDING
+    + STRING_BUFFER_CAPACITY
+    + VARIABLE_BUFFER_CAPACITY
+    + MEMORY_BUFFER_CAPACITY
+    + ARGS_BUFFER_CAPACITY;
 
 impl Emulator {
     pub fn new() -> Emulator {
@@ -81,6 +87,29 @@ impl Emulator {
 pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
     let mut fd1 = stdout();
     let mut fd2 = stderr();
+
+    let argv;
+    {
+        let mut ptrs: Vec<u64> = vec![];
+        let mut i: usize = 0;
+        for arg in &emulator.args {
+            ptrs.push((ARGS_BUFFER_START + i) as u64);
+            for c in arg.chars() {
+                emulator.memory[ARGS_BUFFER_START + i] = c as u8;
+                i += 1;
+            }
+            emulator.memory[ARGS_BUFFER_START + i] = 0;
+            i += 1;
+        }
+
+        argv = (ARGS_BUFFER_START + i) as i64;
+        for ptr in ptrs {
+            for b in ptr.to_le_bytes() {
+                emulator.memory[ARGS_BUFFER_START + i] = b;
+                i += 1;
+            }
+        }
+    }
 
     while emulator.ip < ir.instructions.len() {
         let op = ir.instructions[emulator.ip].clone();
@@ -702,8 +731,14 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
             }
             IrInstructionKind::CastPointer => emulator.ip += 1,
             IrInstructionKind::CastInt => emulator.ip += 1,
-            IrInstructionKind::Argc => todo!(),
-            IrInstructionKind::Argv => todo!(),
+            IrInstructionKind::Argc => {
+                emulator.stack.push(emulator.args.len() as i64);
+                emulator.ip += 1;
+            }
+            IrInstructionKind::Argv => {
+                emulator.stack.push(argv);
+                emulator.ip += 1;
+            }
         }
     }
 }
@@ -711,7 +746,12 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
 pub fn emulate_file(config: Config) -> Result<()> {
     let ir = compile_file_into_ir(config.clone().input)?;
     let mut emulator = Emulator::new();
-    emulator.args = config.run.args;
+
+    emulator.args.push(config.input);
+    for a in config.run.args {
+        emulator.args.push(a);
+    }
+
     emulator.init(ir.clone());
     emulate_program(ir.clone(), &mut emulator);
     Ok(())
