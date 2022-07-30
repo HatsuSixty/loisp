@@ -9,6 +9,7 @@ use super::print_info;
 use std::fs;
 use std::io;
 use std::io::Write;
+use std::io::BufWriter;
 
 static IR_ASSERT_ENABLED: bool = false;
 static X86_64_RET_STACK_CAP: usize = 65536;
@@ -140,7 +141,7 @@ pub struct IrInstruction {
 impl IrInstruction {
     pub fn to_intel_linux_x86_64_assembly(
         &self,
-        f: &mut fs::File,
+        f: &mut BufWriter<fs::File>,
         context: &mut IrContext,
     ) -> io::Result<()> {
         use IrInstructionKind::*;
@@ -457,87 +458,91 @@ impl IrProgram {
             print_info!("INFO", "Generating `{}`", output);
         }
 
-        let mut f = fs::OpenOptions::new()
+        let f = fs::OpenOptions::new()
             .create(true)
             .truncate(true)
             .write(true)
             .open(output)
             .expect("Could not open file {}");
 
-        writeln!(f, "format ELF64 executable 3")?;
-        writeln!(f, "print:")?;
-        writeln!(f, "mov r9, -3689348814741910323")?;
-        writeln!(f, "sub rsp, 40")?;
-        writeln!(f, "mov BYTE [rsp+31], 10")?;
-        writeln!(f, "lea rcx, [rsp+30]")?;
-        writeln!(f, ".L2:")?;
-        writeln!(f, "mov rax, rdi")?;
-        writeln!(f, "lea r8, [rsp+32]")?;
-        writeln!(f, "mul r9")?;
-        writeln!(f, "mov rax, rdi")?;
-        writeln!(f, "sub r8, rcx")?;
-        writeln!(f, "shr rdx, 3")?;
-        writeln!(f, "lea rsi, [rdx+rdx*4]")?;
-        writeln!(f, "add rsi, rsi")?;
-        writeln!(f, "sub rax, rsi")?;
-        writeln!(f, "add eax, 48")?;
-        writeln!(f, "mov BYTE [rcx], al")?;
-        writeln!(f, "mov rax, rdi")?;
-        writeln!(f, "mov rdi, rdx")?;
-        writeln!(f, "mov rdx, rcx")?;
-        writeln!(f, "sub rcx, 1")?;
-        writeln!(f, "cmp rax, 9")?;
-        writeln!(f, "ja  .L2")?;
-        writeln!(f, "lea rax, [rsp+32]")?;
-        writeln!(f, "mov edi, 1")?;
-        writeln!(f, "sub rdx, rax")?;
-        writeln!(f, "xor eax, eax")?;
-        writeln!(f, "lea rsi, [rsp+32+rdx]")?;
-        writeln!(f, "mov rdx, r8")?;
-        writeln!(f, "mov rax, 1")?;
-        writeln!(f, "syscall")?;
-        writeln!(f, "add rsp, 40")?;
-        writeln!(f, "ret")?;
-        writeln!(f, "entry start")?;
-        writeln!(f, "start:")?;
-        writeln!(f, "mov rax, ret_stack_end")?;
-        writeln!(f, "mov [ret_stack_rsp], rax")?;
+        let mut buffer = BufWriter::new(f);
+
+        writeln!(buffer, "format ELF64 executable 3")?;
+        writeln!(buffer, "print:")?;
+        writeln!(buffer, "mov r9, -3689348814741910323")?;
+        writeln!(buffer, "sub rsp, 40")?;
+        writeln!(buffer, "mov BYTE [rsp+31], 10")?;
+        writeln!(buffer, "lea rcx, [rsp+30]")?;
+        writeln!(buffer, ".L2:")?;
+        writeln!(buffer, "mov rax, rdi")?;
+        writeln!(buffer, "lea r8, [rsp+32]")?;
+        writeln!(buffer, "mul r9")?;
+        writeln!(buffer, "mov rax, rdi")?;
+        writeln!(buffer, "sub r8, rcx")?;
+        writeln!(buffer, "shr rdx, 3")?;
+        writeln!(buffer, "lea rsi, [rdx+rdx*4]")?;
+        writeln!(buffer, "add rsi, rsi")?;
+        writeln!(buffer, "sub rax, rsi")?;
+        writeln!(buffer, "add eax, 48")?;
+        writeln!(buffer, "mov BYTE [rcx], al")?;
+        writeln!(buffer, "mov rax, rdi")?;
+        writeln!(buffer, "mov rdi, rdx")?;
+        writeln!(buffer, "mov rdx, rcx")?;
+        writeln!(buffer, "sub rcx, 1")?;
+        writeln!(buffer, "cmp rax, 9")?;
+        writeln!(buffer, "ja  .L2")?;
+        writeln!(buffer, "lea rax, [rsp+32]")?;
+        writeln!(buffer, "mov edi, 1")?;
+        writeln!(buffer, "sub rdx, rax")?;
+        writeln!(buffer, "xor eax, eax")?;
+        writeln!(buffer, "lea rsi, [rsp+32+rdx]")?;
+        writeln!(buffer, "mov rdx, r8")?;
+        writeln!(buffer, "mov rax, 1")?;
+        writeln!(buffer, "syscall")?;
+        writeln!(buffer, "add rsp, 40")?;
+        writeln!(buffer, "ret")?;
+        writeln!(buffer, "entry start")?;
+        writeln!(buffer, "start:")?;
+        writeln!(buffer, "mov rax, ret_stack_end")?;
+        writeln!(buffer, "mov [ret_stack_rsp], rax")?;
 
         for (k, i) in self.instructions.iter().enumerate() {
-            writeln!(f, "addr_{}:", k)?;
+            writeln!(buffer, "addr_{}:", k)?;
             context.label_count += 1;
-            writeln!(f, ";; -- {:?} --", i.kind)?;
-            i.to_intel_linux_x86_64_assembly(&mut f, context)?;
+            writeln!(buffer, ";; -- {:?} --", i.kind)?;
+            i.to_intel_linux_x86_64_assembly(&mut buffer, context)?;
         }
 
-        writeln!(f, "mov rax, 60")?;
-        writeln!(f, "mov rdi, 0")?;
-        writeln!(f, "syscall")?;
-        writeln!(f, "segment readable writable")?;
+        writeln!(buffer, "mov rax, 60")?;
+        writeln!(buffer, "mov rdi, 0")?;
+        writeln!(buffer, "syscall")?;
+        writeln!(buffer, "segment readable writable")?;
 
         // data
 
         for s in &context.strings {
-            write!(f, "str_{}: db ", s.ident)?;
+            write!(buffer, "str_{}: db ", s.ident)?;
             for c in s.string.chars() {
-                write!(f, "0x{:02x},", c as u8)?;
+                write!(buffer, "0x{:02x},", c as u8)?;
             }
-            write!(f, "0x00\n")?;
+            write!(buffer, "0x00\n")?;
         }
 
         // bss
 
         for v in &context.variables {
-            writeln!(f, "var_{}: rb {}", v.ident, v.alloc)?;
+            writeln!(buffer, "var_{}: rb {}", v.ident, v.alloc)?;
         }
 
         for m in &context.memories {
-            writeln!(f, "mem_{}: rb {}", m.ident, m.alloc)?;
+            writeln!(buffer, "mem_{}: rb {}", m.ident, m.alloc)?;
         }
 
-        writeln!(f, "ret_stack_rsp: rb 8")?;
-        writeln!(f, "ret_stack: rb {}", X86_64_RET_STACK_CAP)?;
-        writeln!(f, "ret_stack_end:")?;
+        writeln!(buffer, "ret_stack_rsp: rb 8")?;
+        writeln!(buffer, "ret_stack: rb {}", X86_64_RET_STACK_CAP)?;
+        writeln!(buffer, "ret_stack_end:")?;
+
+        buffer.flush()?;
 
         Ok(())
     }
