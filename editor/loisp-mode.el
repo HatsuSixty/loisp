@@ -69,7 +69,7 @@
     ))
 
 ;;;###autoload
-(define-derived-mode loisp-mode prog-mode "loisp"
+(define-derived-mode loisp-mode prog-mode "Loisp"
   "Major Mode for editing Loisp source code"
   :syntax-table loisp-mode-syntax-table
   (setq font-lock-defaults '(loisp-highlights))
