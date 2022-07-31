@@ -176,10 +176,19 @@ pub fn run_tests_for_folder(folder: String) -> io::Result<()> {
     for p in paths {
         if p.ends_with(LOISP_FILE_EXTENSION) {
             let expected_path = format!("{}.conf", file_name_without_extension(p.clone()));
+            let expected = read_file_return_test_case(expected_path.clone())?;
+
+            let mut args = p.clone();
+            for (i, a) in expected.args.iter().enumerate() {
+                if i >= 1 {
+                    args = format!("{} {}", args, a);
+                }
+            }
+
             let (compilation_got, compilation_compiled) =
-                cmd_run_return_test_case(format!("./target/debug/loisp -s run {}", p.clone()));
+                cmd_run_return_test_case(format!("./target/debug/loisp -s run {}", args));
             let (emulation_got, emulation_compiled) =
-                cmd_run_return_test_case(format!("./target/debug/loisp -s emulate {}", p.clone()));
+                cmd_run_return_test_case(format!("./target/debug/loisp -s emulate {}", args));
             if !Path::new(expected_path.as_str()).exists() {
                 print_info!(
                     "WARN",
@@ -194,8 +203,6 @@ pub fn run_tests_for_folder(folder: String) -> io::Result<()> {
                 }
                 stats.ignored += 1;
             } else {
-                let expected = read_file_return_test_case(expected_path)?;
-
                 if expected != compilation_got {
                     print_info!("ERROR", "Test failed:\n    Expected: {:#?}\n    Got: {:#?}", expected, compilation_got);
                     stats.failed += 1;
