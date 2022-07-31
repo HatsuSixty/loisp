@@ -25,6 +25,15 @@ pub struct TestCase {
     pub stderr: String,
 }
 
+impl TestCase {
+    pub fn new() -> TestCase {
+        TestCase {
+            args: vec![],
+            stdout: String::new(),
+            stderr: String::new(),
+        }
+    }
+}
                                               // test      compiled
 pub fn cmd_run_return_test_case(cmd: String) -> (TestCase, bool) {
     print_info!("CMD", "{}", cmd);
@@ -176,7 +185,13 @@ pub fn run_tests_for_folder(folder: String) -> io::Result<()> {
     for p in paths {
         if p.ends_with(LOISP_FILE_EXTENSION) {
             let expected_path = format!("{}.conf", file_name_without_extension(p.clone()));
-            let expected = read_file_return_test_case(expected_path.clone())?;
+
+            let expected;
+            if Path::new(expected_path.as_str()).exists() {
+                expected = read_file_return_test_case(expected_path.clone())?;
+            } else {
+                expected = TestCase::new();
+            }
 
             let mut args = p.clone();
             for (i, a) in expected.args.iter().enumerate() {
