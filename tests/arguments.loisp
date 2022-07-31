@@ -1,0 +1,14 @@
+(include "std.loisp")
+
+(setvar argv (+(castint(argv))8))
+(setvar argc (-(argc)1))
+
+(setvar i 0)
+(while (<(getvar i)(getvar argc))
+  (call puts
+    (load64
+      (castptr
+        (+(getvar argv)(*(getvar i)(expand sizeof-ptr))))))
+  (call puts "\n")
+  (chvar i (+(getvar i)1))
+)
