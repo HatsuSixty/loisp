@@ -195,6 +195,8 @@ pub enum LoispInstructionType {
     Increment,
     Reset,
     TypeOf,
+    Argc,
+    Argv,
 }
 
 #[derive(Debug, Clone)]
@@ -741,6 +743,8 @@ impl LoispInstruction {
             LoispInstructionType::Increment => Integer,
             LoispInstructionType::Reset => Integer,
             LoispInstructionType::TypeOf => String,
+            LoispInstructionType::Argc => Integer,
+            LoispInstructionType::Argv => Pointer,
         }
     }
 
@@ -2306,6 +2310,32 @@ impl LoispInstruction {
                     IrInstruction {
                         kind: IrInstructionKind::PushString,
                         operand: IrInstructionValue::new().string(format!("{:?}", datatype)),
+                    },
+                    ir,
+                );
+            }
+            Argc => {
+                if self.parameters.len() != 0 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Argc,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                );
+            }
+            Argv => {
+                if self.parameters.len() != 0 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Argv,
+                        operand: IrInstructionValue::new(),
                     },
                     ir,
                 );
