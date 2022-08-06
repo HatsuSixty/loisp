@@ -12,15 +12,28 @@ macro_rules! print_info {
 }
 
 pub fn file_name_without_extension(f: String) -> String {
-    let startwithdot: bool = f.starts_with('.');
+    // if the file name begins with dots, store them in
+    // the variable `dots`
+    let mut dots = String::new();
+    {
+        let mut f_iter = f.chars().peekable();
+        while let Some(c) = f_iter.next_if(|x| *x == '.') { dots.push(c) }
+    }
+
+    // split the file name by `.` & remove the last item
     let mut split_by_dot: Vec<&str> = f.split('.').collect();
     split_by_dot.pop();
+
+    // concatenate all the strings in the vector of strings
+    // that were splited
     let mut returnn = String::new();
     for s in split_by_dot {
         returnn = format!("{} {}", returnn, s);
     }
 
-    if startwithdot { returnn = returnn.trim().to_string(); returnn.insert(0, '.') }
+    // insert the dots that were removed
+    returnn = returnn.trim().to_string();
+    for c in dots.chars() { returnn.insert(0, c); }
 
     return returnn.trim().to_string();
 }
