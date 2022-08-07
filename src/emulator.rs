@@ -4,7 +4,61 @@ use super::ir::*;
 
 use std::collections::HashMap;
 use std::io::*;
-use std::process::exit;
+use std::process::*;
+use std::fs::File;
+
+pub struct Stream {
+    pub stdout: Option<Stdout>,
+    pub stderr: Option<Stderr>,
+    pub stdin: Option<Stdin>,
+    pub file: Option<File>,
+}
+
+impl Stream {
+    pub fn new() -> Stream {
+        Stream {
+            stdout: None,
+            stderr: None,
+            stdin: None,
+            file: None,
+        }
+    }
+
+    pub fn write(&self, s: String) -> Result<()> {
+        if !self.stdout.is_none() {
+            write!(self.stdout.as_ref().unwrap(), "{}", s);
+        } else if !self.stderr.is_none() {
+            write!(self.stderr.as_ref().unwrap(), "{}", s);
+        } else if !self.file.is_none() {
+            write!(self.file.as_ref().unwrap(), "{}", s);
+        } else if !self.stdin.is_none() {
+            return Err(Error::new(ErrorKind::Other, "EBADFD"));
+        }
+
+        Ok(())
+    }
+
+    pub fn read(&self) -> Result<String> {
+        let mut result = String::new();
+
+        if !self.stdout.is_none() {
+            stdin().read_line(&mut result)?;
+        } else if !self.stderr.is_none() {
+            stdin().read_line(&mut result)?;
+        } else if !self.stdin.is_none() {
+            stdin().read_line(&mut result)?;
+        } else if !self.file.is_none() {
+            let mut bytes: Vec<u8> = vec![];
+            self.file.as_ref().unwrap().read_to_end(&mut bytes)?;
+            result = match String::from_utf8(bytes.to_vec()) {
+                Ok(s) => s,
+                Err(_) => String::new(),
+            }
+        }
+
+        Ok(result)
+    }
+}
 
 pub struct Emulator {
     pub args: Vec<String>,
@@ -20,6 +74,8 @@ pub struct Emulator {
     pub memories_size: usize,
 
     pub ret_stack: Vec<usize>,
+
+    pub fds: HashMap<usize, Stream>,
 
     pub memory: Vec<u8>,
 }
@@ -46,7 +102,7 @@ static X86_64_MEMORY_CAPACITY: usize = NULL_PTR_PADDING
 
 impl Emulator {
     pub fn new() -> Emulator {
-        Emulator {
+        let mut ctx = Emulator {
             args: vec![],
             stack: vec![],
             ip: 0,
@@ -61,8 +117,23 @@ impl Emulator {
 
             ret_stack: vec![],
 
+            fds: HashMap::new(),
+
             memory: vec![0; X86_64_MEMORY_CAPACITY],
-        }
+        };
+
+        let mut fd0 = Stream::new();
+        let mut fd1 = Stream::new();
+        let mut fd2 = Stream::new();
+        fd1.stdout = Some(stdout());
+        fd2.stderr = Some(stderr());
+        fd0.stdin = Some(stdin());
+
+        ctx.fds.insert(0, fd0);
+        ctx.fds.insert(1, fd1);
+        ctx.fds.insert(2, fd2);
+
+        ctx
     }
 
     pub fn init(&mut self, ir: IrProgram) {
@@ -322,6 +393,10 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                             panic!("stack underflow");
                         }
                         exit(code);
+                    }
+                    257 => {
+                        // SYS_openat
+                        todo!("SYS_openat");
                     }
                     _ => panic!("unsupported syscall: {}", syscall_number),
                 }
