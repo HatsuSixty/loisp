@@ -26,11 +26,20 @@ impl Stream {
 
     pub fn write(&self, s: String) -> Result<()> {
         if !self.stdout.is_none() {
+            //////////
             write!(self.stdout.as_ref().unwrap(), "{}", s)?;
+            self.stdout.as_ref().unwrap().flush()?;
+            //////////
         } else if !self.stderr.is_none() {
+            //////////
             write!(self.stderr.as_ref().unwrap(), "{}", s)?;
+            self.stderr.as_ref().unwrap().flush()?;
+            //////////
         } else if !self.file.is_none() {
+            //////////
             write!(self.file.as_ref().unwrap(), "{}", s)?;
+            self.file.as_ref().unwrap().flush()?;
+            //////////
         } else if !self.stdin.is_none() {
             return Err(Error::new(ErrorKind::Other, "EBADFD"));
         }
@@ -156,9 +165,6 @@ impl Emulator {
 }
 
 pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
-    let mut fd1 = stdout();
-    let mut fd2 = stderr();
-
     let argv;
     {
         let mut ptrs: Vec<u64> = vec![];
@@ -376,16 +382,14 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                             i += 1;
                         }
 
-                        match fd {
-                            1 => {
-                                write!(fd1, "{}", buffer).expect("write syscall failed");
-                                fd1.flush().unwrap();
+                        if let Some(stream) = emulator.fds.get(&(fd as usize)) {
+                            if let Err(_) = stream.write(buffer) {
+                                emulator.stack.push(77);
+                            } else {
+                                emulator.stack.push(count);
                             }
-                            2 => {
-                                write!(fd2, "{}", buffer).expect("write syscall failed");
-                                fd2.flush().unwrap();
-                            }
-                            _ => emulator.stack.push(77),
+                        } else {
+                            emulator.stack.push(77);
                         }
                     }
                     60 => {
