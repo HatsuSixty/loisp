@@ -26,11 +26,11 @@ impl Stream {
 
     pub fn write(&self, s: String) -> Result<()> {
         if !self.stdout.is_none() {
-            write!(self.stdout.as_ref().unwrap(), "{}", s);
+            write!(self.stdout.as_ref().unwrap(), "{}", s)?;
         } else if !self.stderr.is_none() {
-            write!(self.stderr.as_ref().unwrap(), "{}", s);
+            write!(self.stderr.as_ref().unwrap(), "{}", s)?;
         } else if !self.file.is_none() {
-            write!(self.file.as_ref().unwrap(), "{}", s);
+            write!(self.file.as_ref().unwrap(), "{}", s)?;
         } else if !self.stdin.is_none() {
             return Err(Error::new(ErrorKind::Other, "EBADFD"));
         }
@@ -323,23 +323,27 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                             panic!("stack underflow");
                         }
 
-                        if fd != 0 {
-                            emulator.stack.push(77);
+                        let buffer;
+                        if let Some(stream) = emulator.fds.get(&(fd as usize)) {
+                            buffer = match stream.read() {
+                                Ok(s) => s,
+                                Err(_) => String::new(),
+                            };
                         } else {
-                            let mut read = String::new();
-                            stdin()
-                                .read_line(&mut read)
-                                .expect("error performing read syscall");
-
-                            for i in 0..count {
-                                if i >= (read.as_bytes().len() as i64) {
-                                    emulator.memory[buf as usize] = 0;
-                                } else {
-                                    emulator.memory[buf as usize] = read.as_bytes()[i as usize];
-                                }
-                                buf += 1;
-                            }
+                            emulator.stack.push(77);
+                            continue;
                         }
+
+                        for i in 0..count {
+                            if i >= (buffer.as_bytes().len() as i64) {
+                                emulator.memory[buf as usize] = 0;
+                            } else {
+                                emulator.memory[buf as usize] = buffer.as_bytes()[i as usize];
+                            }
+                            buf += 1;
+                        }
+
+                        emulator.stack.push(count);
                     }
                     1 => {
                         // SYS_write
