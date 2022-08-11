@@ -3,8 +3,72 @@ use super::config::*;
 use super::ir::*;
 
 use std::collections::HashMap;
+use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::*;
-use std::process::exit;
+use std::process::*;
+
+pub struct Stream {
+    pub stdout: Option<Stdout>,
+    pub stderr: Option<Stderr>,
+    pub stdin: Option<Stdin>,
+    pub file: Option<File>,
+}
+
+impl Stream {
+    pub fn new() -> Stream {
+        Stream {
+            stdout: None,
+            stderr: None,
+            stdin: None,
+            file: None,
+        }
+    }
+
+    pub fn write(&self, s: String) -> Result<()> {
+        if !self.stdout.is_none() {
+            //////////
+            write!(self.stdout.as_ref().unwrap(), "{}", s)?;
+            self.stdout.as_ref().unwrap().flush()?;
+            //////////
+        } else if !self.stderr.is_none() {
+            //////////
+            write!(self.stderr.as_ref().unwrap(), "{}", s)?;
+            self.stderr.as_ref().unwrap().flush()?;
+            //////////
+        } else if !self.file.is_none() {
+            //////////
+            write!(self.file.as_ref().unwrap(), "{}", s)?;
+            self.file.as_ref().unwrap().flush()?;
+            //////////
+        } else if !self.stdin.is_none() {
+            return Err(Error::new(ErrorKind::Other, "EBADFD"));
+        }
+
+        Ok(())
+    }
+
+    pub fn read(&self) -> Result<String> {
+        let mut result = String::new();
+
+        if !self.stdout.is_none() {
+            stdin().read_line(&mut result)?;
+        } else if !self.stderr.is_none() {
+            stdin().read_line(&mut result)?;
+        } else if !self.stdin.is_none() {
+            stdin().read_line(&mut result)?;
+        } else if !self.file.is_none() {
+            let mut bytes: Vec<u8> = vec![];
+            self.file.as_ref().unwrap().read_to_end(&mut bytes)?;
+            result = match String::from_utf8(bytes.to_vec()) {
+                Ok(s) => s,
+                Err(_) => String::new(),
+            }
+        }
+
+        Ok(result)
+    }
+}
 
 pub struct Emulator {
     pub args: Vec<String>,
@@ -20,6 +84,8 @@ pub struct Emulator {
     pub memories_size: usize,
 
     pub ret_stack: Vec<usize>,
+
+    pub fds: HashMap<usize, Stream>,
 
     pub memory: Vec<u8>,
 }
@@ -46,7 +112,7 @@ static X86_64_MEMORY_CAPACITY: usize = NULL_PTR_PADDING
 
 impl Emulator {
     pub fn new() -> Emulator {
-        Emulator {
+        let mut ctx = Emulator {
             args: vec![],
             stack: vec![],
             ip: 0,
@@ -61,8 +127,23 @@ impl Emulator {
 
             ret_stack: vec![],
 
+            fds: HashMap::new(),
+
             memory: vec![0; X86_64_MEMORY_CAPACITY],
-        }
+        };
+
+        let mut fd0 = Stream::new();
+        let mut fd1 = Stream::new();
+        let mut fd2 = Stream::new();
+        fd1.stdout = Some(stdout());
+        fd2.stderr = Some(stderr());
+        fd0.stdin = Some(stdin());
+
+        ctx.fds.insert(0, fd0);
+        ctx.fds.insert(1, fd1);
+        ctx.fds.insert(2, fd2);
+
+        ctx
     }
 
     pub fn init(&mut self, ir: IrProgram) {
@@ -85,9 +166,6 @@ impl Emulator {
 }
 
 pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
-    let mut fd1 = stdout();
-    let mut fd2 = stderr();
-
     let argv;
     {
         let mut ptrs: Vec<u64> = vec![];
@@ -252,23 +330,28 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                             panic!("stack underflow");
                         }
 
-                        if fd != 0 {
-                            emulator.stack.push(77);
+                        let buffer;
+                        if let Some(stream) = emulator.fds.get(&(fd as usize)) {
+                            buffer = match stream.read() {
+                                Ok(s) => s,
+                                Err(_) => String::new(),
+                            };
                         } else {
-                            let mut read = String::new();
-                            stdin()
-                                .read_line(&mut read)
-                                .expect("error performing read syscall");
-
-                            for i in 0..count {
-                                if i >= (read.as_bytes().len() as i64) {
-                                    emulator.memory[buf as usize] = 0;
-                                } else {
-                                    emulator.memory[buf as usize] = read.as_bytes()[i as usize];
-                                }
-                                buf += 1;
-                            }
+                            emulator.stack.push(-77);
+                            emulator.ip += 1;
+                            continue;
                         }
+
+                        for i in 0..count {
+                            if i >= (buffer.as_bytes().len() as i64) {
+                                emulator.memory[buf as usize] = 0;
+                            } else {
+                                emulator.memory[buf as usize] = buffer.as_bytes()[i as usize];
+                            }
+                            buf += 1;
+                        }
+
+                        emulator.stack.push(count);
                     }
                     1 => {
                         // SYS_write
@@ -301,16 +384,28 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                             i += 1;
                         }
 
-                        match fd {
-                            1 => {
-                                write!(fd1, "{}", buffer).expect("write syscall failed");
-                                fd1.flush().unwrap();
+                        if let Some(stream) = emulator.fds.get(&(fd as usize)) {
+                            if let Err(_) = stream.write(buffer) {
+                                emulator.stack.push(-77);
+                            } else {
+                                emulator.stack.push(count);
                             }
-                            2 => {
-                                write!(fd2, "{}", buffer).expect("write syscall failed");
-                                fd2.flush().unwrap();
-                            }
-                            _ => emulator.stack.push(77),
+                        } else {
+                            emulator.stack.push(-77);
+                        }
+                    }
+                    3 => {
+                        // SYS_close
+                        let fd;
+
+                        if let Some(f) = emulator.stack.pop() {
+                            fd = f;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if let Some(_) = emulator.fds.remove(&(fd as usize)) {
+                            emulator.stack.push(-77);
                         }
                     }
                     60 => {
@@ -322,6 +417,132 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                             panic!("stack underflow");
                         }
                         exit(code);
+                    }
+                    257 => {
+                        // SYS_openat
+                        let dfd;
+                        let nameptr;
+                        let flags;
+                        let mode;
+
+                        if let Some(fd) = emulator.stack.pop() {
+                            dfd = fd;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if let Some(ptr) = emulator.stack.pop() {
+                            nameptr = ptr;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if let Some(fl) = emulator.stack.pop() {
+                            flags = fl as u64;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if let Some(r#mod) = emulator.stack.pop() {
+                            mode = r#mod;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if mode != 420 {
+                            emulator.stack.push(-1);
+                            emulator.ip += 1;
+                            continue;
+                        }
+
+                        if dfd != -100 {
+                            emulator.stack.push(-1);
+                            emulator.ip += 1;
+                            continue;
+                        }
+
+                        let mut filename = String::new();
+                        {
+                            for i in nameptr..(emulator.memory.len() as i64) {
+                                if emulator.memory[i as usize] == 0 {
+                                    break;
+                                }
+
+                                filename.push(emulator.memory[i as usize] as char);
+                            }
+                        }
+
+                        static O_CREAT: u64 = 64;
+                        static O_RDONLY: u64 = 0;
+                        static O_WRONLY: u64 = 1;
+                        static O_TRUNC: u64 = 512;
+                        static O_RDWR: u64 = 2;
+
+                        #[rustfmt::skip] let istrunc =     if (flags & O_TRUNC) == O_TRUNC { true } else { false };
+                        #[rustfmt::skip] let iswriteonly = if (flags & O_WRONLY) == O_WRONLY { true } else { false };
+                        #[rustfmt::skip] let iscreate =    if (flags & O_CREAT) == O_CREAT { true } else { false };
+                        #[rustfmt::skip] let isreadonly =  if (flags & O_RDONLY) == O_RDONLY { true } else { false };
+                        #[rustfmt::skip] let isrdwr =      if (flags & O_RDWR) == O_RDWR { true } else { false };
+
+                        if !istrunc && !iswriteonly && !iscreate && !isreadonly && isrdwr {
+                            emulator.stack.push(-1);
+                            emulator.ip += 1;
+                            continue;
+                        }
+
+                        let file = if iswriteonly {
+                            let f = OpenOptions::new()
+                                .create(iscreate)
+                                .truncate(istrunc)
+                                .write(true)
+                                .read(false)
+                                .open(filename);
+                            if f.is_err() {
+                                emulator.stack.push(-2);
+                                emulator.ip += 1;
+                                continue;
+                            }
+                            f.unwrap()
+                        } else if isreadonly {
+                            let f = OpenOptions::new()
+                                .create(iscreate)
+                                .truncate(istrunc)
+                                .write(false)
+                                .read(true)
+                                .open(filename);
+                            if f.is_err() {
+                                emulator.stack.push(-2);
+                                emulator.ip += 1;
+                                continue;
+                            }
+                            f.unwrap()
+                        } else if isrdwr {
+                            let f = OpenOptions::new()
+                                .create(iscreate)
+                                .truncate(istrunc)
+                                .write(true)
+                                .read(true)
+                                .open(filename);
+                            if f.is_err() {
+                                emulator.stack.push(-2);
+                                emulator.ip += 1;
+                                continue;
+                            }
+                            f.unwrap()
+                        } else {
+                            panic!("unreachable");
+                        };
+
+                        let fd = emulator.fds.len();
+
+                        let mut stream;
+                        {
+                            stream = Stream::new();
+                            stream.file = Some(file);
+                        }
+
+                        emulator.fds.insert(fd, stream);
+                        emulator.stack.push(fd as i64);
                     }
                     _ => panic!("unsupported syscall: {}", syscall_number),
                 }
