@@ -3,9 +3,10 @@ use super::config::*;
 use super::ir::*;
 
 use std::collections::HashMap;
+use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::*;
 use std::process::*;
-use std::fs::File;
 
 pub struct Stream {
     pub stdout: Option<Stdout>,
@@ -336,7 +337,8 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                                 Err(_) => String::new(),
                             };
                         } else {
-                            emulator.stack.push(77);
+                            emulator.stack.push(-77);
+                            emulator.ip += 1;
                             continue;
                         }
 
@@ -384,12 +386,26 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
 
                         if let Some(stream) = emulator.fds.get(&(fd as usize)) {
                             if let Err(_) = stream.write(buffer) {
-                                emulator.stack.push(77);
+                                emulator.stack.push(-77);
                             } else {
                                 emulator.stack.push(count);
                             }
                         } else {
-                            emulator.stack.push(77);
+                            emulator.stack.push(-77);
+                        }
+                    }
+                    3 => {
+                        // SYS_close
+                        let fd;
+
+                        if let Some(f) = emulator.stack.pop() {
+                            fd = f;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if let Some(_) = emulator.fds.remove(&(fd as usize)) {
+                            emulator.stack.push(-77);
                         }
                     }
                     60 => {
@@ -404,7 +420,129 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                     }
                     257 => {
                         // SYS_openat
-                        todo!("SYS_openat");
+                        let dfd;
+                        let nameptr;
+                        let flags;
+                        let mode;
+
+                        if let Some(fd) = emulator.stack.pop() {
+                            dfd = fd;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if let Some(ptr) = emulator.stack.pop() {
+                            nameptr = ptr;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if let Some(fl) = emulator.stack.pop() {
+                            flags = fl as u64;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if let Some(r#mod) = emulator.stack.pop() {
+                            mode = r#mod;
+                        } else {
+                            panic!("stack underflow");
+                        }
+
+                        if mode != 420 {
+                            emulator.stack.push(-1);
+                            emulator.ip += 1;
+                            continue;
+                        }
+
+                        if dfd != -100 {
+                            emulator.stack.push(-1);
+                            emulator.ip += 1;
+                            continue;
+                        }
+
+                        let mut filename = String::new();
+                        {
+                            for i in nameptr..(emulator.memory.len() as i64) {
+                                if emulator.memory[i as usize] == 0 {
+                                    break;
+                                }
+
+                                filename.push(emulator.memory[i as usize] as char);
+                            }
+                        }
+
+                        static O_CREAT: u64 = 64;
+                        static O_RDONLY: u64 = 0;
+                        static O_WRONLY: u64 = 1;
+                        static O_TRUNC: u64 = 512;
+                        static O_RDWR: u64 = 2;
+
+                        #[rustfmt::skip] let istrunc =     if (flags & O_TRUNC) == O_TRUNC { true } else { false };
+                        #[rustfmt::skip] let iswriteonly = if (flags & O_WRONLY) == O_WRONLY { true } else { false };
+                        #[rustfmt::skip] let iscreate =    if (flags & O_CREAT) == O_CREAT { true } else { false };
+                        #[rustfmt::skip] let isreadonly =  if (flags & O_RDONLY) == O_RDONLY { true } else { false };
+                        #[rustfmt::skip] let isrdwr =      if (flags & O_RDWR) == O_RDWR { true } else { false };
+
+                        if !istrunc && !iswriteonly && !iscreate && !isreadonly && isrdwr {
+                            emulator.stack.push(-1);
+                            emulator.ip += 1;
+                            continue;
+                        }
+
+                        let file = if iswriteonly {
+                            let f = OpenOptions::new()
+                                .create(iscreate)
+                                .truncate(istrunc)
+                                .write(true)
+                                .read(false)
+                                .open(filename);
+                            if f.is_err() {
+                                emulator.stack.push(-2);
+                                emulator.ip += 1;
+                                continue;
+                            }
+                            f.unwrap()
+                        } else if isreadonly {
+                            let f = OpenOptions::new()
+                                .create(iscreate)
+                                .truncate(istrunc)
+                                .write(false)
+                                .read(true)
+                                .open(filename);
+                            if f.is_err() {
+                                emulator.stack.push(-2);
+                                emulator.ip += 1;
+                                continue;
+                            }
+                            f.unwrap()
+                        } else if isrdwr {
+                            let f = OpenOptions::new()
+                                .create(iscreate)
+                                .truncate(istrunc)
+                                .write(true)
+                                .read(true)
+                                .open(filename);
+                            if f.is_err() {
+                                emulator.stack.push(-2);
+                                emulator.ip += 1;
+                                continue;
+                            }
+                            f.unwrap()
+                        } else {
+                            panic!("unreachable");
+                        };
+
+                        let fd = emulator.fds.len();
+
+                        let mut stream;
+                        {
+                            stream = Stream::new();
+                            stream.file = Some(file);
+                        }
+
+                        emulator.fds.insert(fd, stream);
+                        emulator.stack.push(fd as i64);
                     }
                     _ => panic!("unsupported syscall: {}", syscall_number),
                 }
