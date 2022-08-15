@@ -1,0 +1,44 @@
+(include "std.loisp")
+
+(macro BOARD_CAP 30)
+(alloc board (expand BOARD_CAP))
+
+(store8(castptr
+  (+(castint (getmem board))(-(expand BOARD_CAP)2)))1)
+
+(setvar i 0)
+(setvar j 0)
+(setvar pattern 0)
+(while (<(getvar i)(-(expand BOARD_CAP)2))
+  (chvar j 0)
+  (while (<(getvar j)(expand BOARD_CAP))
+    (if (load8
+          (castptr(+(castint(getmem board))(getvar j))))
+      (call putc 42)
+      (call putc 32)
+    )
+    (chvar j (+(getvar j)1))
+  )
+  (call putc 10)
+
+  (chvar pattern
+    (|(<<(load8(castptr(+(castint(getmem board))0)))1)
+         (load8(castptr(+(castint(getmem board))1)))))
+
+  (chvar j 1)
+  (while (<(getvar j)(-(expand BOARD_CAP)1))
+    (chvar pattern
+      (|
+        (&(<<(getvar pattern)1)7)
+        (load8
+          (castptr(+(castint(getmem board))(+(getvar j)1))))))
+
+    (store8
+      (castptr(+(castint(getmem board))(getvar j)))
+      (&(>> 110 (getvar pattern))1))
+
+    (chvar j (+(getvar j)1))
+  )
+
+  (chvar i (+(getvar i)1))
+)
