@@ -1843,7 +1843,7 @@ impl LoispInstruction {
                     return Err(LoispError::MismatchedTypes(self.token.clone()));
                 }
 
-                self.push_parameters(ir, context, false)?;
+                self.push_parameters(ir, context, true)?;
 
                 ir_push(
                     IrInstruction {

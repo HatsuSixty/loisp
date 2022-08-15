@@ -341,14 +341,14 @@ impl IrInstruction {
                 writeln!(f, "push rcx")?;
             }
             ShiftLeft => {
-                writeln!(f, "pop rcx")?;
                 writeln!(f, "pop rbx")?;
+                writeln!(f, "pop rcx")?;
                 writeln!(f, "shl rbx, cl")?;
                 writeln!(f, "push rbx")?;
             }
             ShiftRight => {
-                writeln!(f, "pop rcx")?;
                 writeln!(f, "pop rbx")?;
+                writeln!(f, "pop rcx")?;
                 writeln!(f, "shr rbx, cl")?;
                 writeln!(f, "push rbx")?;
             }
