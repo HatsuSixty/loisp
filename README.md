@@ -24,7 +24,7 @@ $ cargo run -- run-test tests # for more details, see `cargo run -- help`
 - [x] Compiled
 - [x] Native
 - [x] Useful (that basically means that the language has enough features to create useful applications)
-- [x] Turing Complete
+- [x] Turing Complete (see [./examples/rule110.loisp](./examples/rule110.loisp))
 - [x] Interpreted
 - [x] Interactive (by implementing a [REPL](https://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop))
 - [x] Type Checked
