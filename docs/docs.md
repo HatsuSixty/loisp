@@ -74,6 +74,7 @@ The available instructios are the following:
 | `typeof`            | Return a string containing the name of the type of the given parameter                                                                  |
 | `argc`              | Return the how many command line arguments were provided to the program                                                                 |
 | `argv`              | Return an array containing all the command line arguments                                                                               |
+| `envp`              | Return an array containing all the environment variables                                                                                |
 
 ## Enumerations
 
