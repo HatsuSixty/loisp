@@ -39,7 +39,7 @@
 
 ;; Built-ins are instructions that just generate ir
 (defconst loisp-builtins
-  '("print" "+" "-" "*" "/" "%" "=" "!=" "<" ">" "<=" ">=" "load64" "store64" "load32" "store32" "load16" "store16" "load8" "store8" "<<" ">>" "&" "|" "!" "castint" "castptr" "argc" "argv"))
+  '("print" "+" "-" "*" "/" "%" "=" "!=" "<" ">" "<=" ">=" "load64" "store64" "load32" "store32" "load16" "store16" "load8" "store8" "<<" ">>" "&" "|" "!" "castint" "castptr" "argc" "argv" "envp"))
 
 ;; Keywords are instructions that do something more than just generating ir
 (defconst loisp-keywords

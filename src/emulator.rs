@@ -1012,6 +1012,9 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.stack.push(argv);
                 emulator.ip += 1;
             }
+            IrInstructionKind::Envp => {
+                todo!();
+            }
         }
     }
 }

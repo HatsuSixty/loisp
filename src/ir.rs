@@ -78,6 +78,7 @@ pub enum IrInstructionKind {
     CastInt,
     Argc,
     Argv,
+    Envp,
 }
 
 #[derive(Debug, Clone)]
@@ -404,6 +405,15 @@ impl IrInstruction {
                 writeln!(f, "add rax, 8\n")?;
                 writeln!(f, "push rax\n")?;
             }
+            Envp => {
+                writeln!(f, "mov rax, [args_ptr]")?;
+                writeln!(f, "mov rax, [rax]")?;
+                writeln!(f, "add rax, 2")?;
+                writeln!(f, "shl rax, 3")?;
+                writeln!(f, "mov rbx, [args_ptr]")?;
+                writeln!(f, "add rbx, rax")?;
+                writeln!(f, "push rbx")?;
+            }
             Nop => {}
         }
 
@@ -456,6 +466,7 @@ impl IrInstruction {
             CastInt => return Integer,
             Argc => return Integer,
             Argv => return Pointer,
+            Envp => return Pointer,
         }
     }
 }

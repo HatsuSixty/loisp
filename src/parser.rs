@@ -89,6 +89,7 @@ pub fn token_to_instruction_kind(token: LexerToken) -> Result<LoispInstructionTy
         "typeof" => Ok(LoispInstructionType::TypeOf),
         "argc" => Ok(LoispInstructionType::Argc),
         "argv" => Ok(LoispInstructionType::Argv),
+        "envp" => Ok(LoispInstructionType::Envp),
         _ => Err(ParserError::UnknownInstruction(token.clone())),
     }
 }

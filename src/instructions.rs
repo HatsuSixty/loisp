@@ -197,6 +197,7 @@ pub enum LoispInstructionType {
     TypeOf,
     Argc,
     Argv,
+    Envp,
 }
 
 #[derive(Debug, Clone)]
@@ -745,6 +746,7 @@ impl LoispInstruction {
             LoispInstructionType::TypeOf => String,
             LoispInstructionType::Argc => Integer,
             LoispInstructionType::Argv => Pointer,
+            LoispInstructionType::Envp => Pointer,
         }
     }
 
@@ -2335,6 +2337,19 @@ impl LoispInstruction {
                 ir_push(
                     IrInstruction {
                         kind: IrInstructionKind::Argv,
+                        operand: IrInstructionValue::new(),
+                    },
+                    ir,
+                );
+            }
+            Envp => {
+                if self.parameters.len() != 0 {
+                    return Err(LoispError::TooMuchParameters(self.token.clone()));
+                }
+
+                ir_push(
+                    IrInstruction {
+                        kind: IrInstructionKind::Envp,
                         operand: IrInstructionValue::new(),
                     },
                     ir,
