@@ -159,9 +159,41 @@ impl Emulator {
                         .insert(self.memories.len(), self.memories_size);
                     self.memories_size += i.operand.integer as usize;
                 }
+                IrInstructionKind::PushString => {
+                    let string = escape_string(i.operand.string);
+                    for c in string.chars() {
+                        self.memory[self.string_size] = c as u8;
+                        self.string_size += 1;
+                    }
+                    self.memory[self.string_size] = 0;
+                    self.string_size += 1;
+                }
                 _ => {}
             }
         }
+    }
+
+    pub fn find_string_in_memory(&self, string: String) -> Option<usize> {
+        let mut pos_search = 0;
+        let mut pos_text = 0;
+        let len_search = string.len();
+        let len_text = STRING_BUFFER_CAPACITY;
+
+        while pos_text < len_text - len_search {
+            if self.memory[pos_text] == string.as_bytes()[pos_search] {
+                pos_search += 1;
+                if pos_search == len_search {
+                    return Some(pos_text - (len_search - 1));
+                }
+            } else {
+                pos_text -= pos_search;
+                pos_search = 0;
+            }
+
+            pos_text += 1;
+        }
+
+        return None;
     }
 }
 
@@ -927,16 +959,13 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.ip += 1;
             }
             IrInstructionKind::PushString => {
-                let addr = emulator.string_size;
                 let string = escape_string(op.operand.string);
-                for c in string.chars() {
-                    emulator.memory[emulator.string_size] = c as u8;
-                    emulator.string_size += 1;
+                if let Some(addr) = emulator.find_string_in_memory(string) {
+                    emulator.stack.push(addr as i64);
+                } else {
+                    eprintln!("Unreachable\n");
+                    exit(1);
                 }
-                emulator.memory[emulator.string_size] = 0;
-                emulator.string_size += 1;
-
-                emulator.stack.push(addr as i64);
                 emulator.ip += 1;
             }
             IrInstructionKind::Call => {
