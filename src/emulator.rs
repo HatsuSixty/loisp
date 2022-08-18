@@ -179,6 +179,10 @@ impl Emulator {
         let len_search = string.len();
         let len_text = STRING_BUFFER_CAPACITY;
 
+        if len_search == 0 {
+            return Some(0);
+        }
+
         while pos_text < len_text - len_search {
             if self.memory[pos_text] == string.as_bytes()[pos_search] {
                 pos_search += 1;
