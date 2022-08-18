@@ -161,8 +161,8 @@ impl Emulator {
                 }
                 IrInstructionKind::PushString => {
                     let string = escape_string(i.operand.string);
-                    for c in string.chars() {
-                        self.memory[self.string_size] = c as u8;
+                    for c in string.as_bytes() {
+                        self.memory[self.string_size] = *c;
                         self.string_size += 1;
                     }
                     self.memory[self.string_size] = 0;
@@ -413,12 +413,22 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                             panic!("stack underflow");
                         }
 
-                        let mut buffer = String::new();
+                        let mut bytes: Vec<u8> = vec![];
                         let mut i = 0;
+
                         while i < count {
-                            buffer.push(emulator.memory[(buf + i) as usize] as char);
+                            bytes.push(emulator.memory[(buf + i) as usize]);
                             i += 1;
                         }
+
+                        let mut buffer = String::new();
+                        if let Ok(string) = String::from_utf8(bytes.clone()) {
+                            buffer = string;
+                        } else {
+                            for b in bytes {
+                                buffer.push(b as char);
+                            }
+                        };
 
                         if let Some(stream) = emulator.fds.get(&(fd as usize)) {
                             if let Err(_) = stream.write(buffer) {
@@ -499,12 +509,21 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
 
                         let mut filename = String::new();
                         {
+                            let mut bytes: Vec<u8> = vec![];
                             for i in nameptr..(emulator.memory.len() as i64) {
                                 if emulator.memory[i as usize] == 0 {
                                     break;
                                 }
 
-                                filename.push(emulator.memory[i as usize] as char);
+                                bytes.push(emulator.memory[i as usize]);
+                            }
+
+                            if let Ok(string) = String::from_utf8(bytes.clone()) {
+                                filename = string;
+                            } else {
+                                for b in bytes {
+                                    filename.push(b as char);
+                                }
                             }
                         }
 
@@ -967,7 +986,7 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 if let Some(addr) = emulator.find_string_in_memory(string) {
                     emulator.stack.push(addr as i64);
                 } else {
-                    eprintln!("Unreachable\n");
+                    eprintln!("Unreachable");
                     exit(1);
                 }
                 emulator.ip += 1;

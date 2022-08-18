@@ -551,8 +551,8 @@ impl IrProgram {
 
         for s in &context.strings {
             write!(buffer, "str_{}: db ", s.ident)?;
-            for c in s.string.chars() {
-                write!(buffer, "0x{:02x},", c as u8)?;
+            for c in s.string.as_bytes() {
+                write!(buffer, "0x{:02x},", c)?;
             }
             write!(buffer, "0x00\n")?;
         }
