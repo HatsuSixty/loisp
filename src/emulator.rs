@@ -3,6 +3,7 @@ use super::config::*;
 use super::ir::*;
 
 use std::collections::HashMap;
+use std::env::vars;
 use std::fs::File;
 use std::fs::OpenOptions;
 use std::io::*;
@@ -104,11 +105,15 @@ static MEMORY_BUFFER_START: usize = VARIABLE_BUFFER_START + VARIABLE_BUFFER_CAPA
 static ARGS_BUFFER_CAPACITY: usize = 640000; // should be enough for everyone
 static ARGS_BUFFER_START: usize = MEMORY_BUFFER_START + MEMORY_BUFFER_CAPACITY;
 
+static VARS_BUFFER_CAPACITY: usize = 640000; // should be enough for everyone
+static VARS_BUFFER_START: usize = ARGS_BUFFER_START + ARGS_BUFFER_CAPACITY;
+
 static X86_64_MEMORY_CAPACITY: usize = NULL_PTR_PADDING
     + STRING_BUFFER_CAPACITY
     + VARIABLE_BUFFER_CAPACITY
     + MEMORY_BUFFER_CAPACITY
-    + ARGS_BUFFER_CAPACITY;
+    + ARGS_BUFFER_CAPACITY
+    + VARS_BUFFER_CAPACITY;
 
 impl Emulator {
     pub fn new() -> Emulator {
@@ -208,8 +213,8 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
         let mut i: usize = 0;
         for arg in &emulator.args {
             ptrs.push((ARGS_BUFFER_START + i) as u64);
-            for c in arg.chars() {
-                emulator.memory[ARGS_BUFFER_START + i] = c as u8;
+            for c in arg.as_bytes() {
+                emulator.memory[ARGS_BUFFER_START + i] = *c as u8;
                 i += 1;
             }
             emulator.memory[ARGS_BUFFER_START + i] = 0;
@@ -220,6 +225,32 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
         for ptr in ptrs {
             for b in ptr.to_le_bytes() {
                 emulator.memory[ARGS_BUFFER_START + i] = b;
+                i += 1;
+            }
+        }
+    }
+
+    let envp;
+    {
+        let mut ptrs: Vec<u64> = vec![];
+        let mut i: usize = 0;
+        for (key, value) in vars() {
+            let env = format!("{}={}", key, value);
+
+            ptrs.push((VARS_BUFFER_START + i) as u64);
+            for b in env.clone().as_bytes() {
+                emulator.memory[VARS_BUFFER_START + i] = *b;
+                i += 1;
+            }
+            emulator.memory[VARS_BUFFER_START + i] = 0;
+            i += 1;
+        }
+        ptrs.push(0);
+
+        envp = (VARS_BUFFER_START + i) as i64;
+        for p in ptrs {
+            for b in p.to_le_bytes() {
+                emulator.memory[VARS_BUFFER_START + i] = b;
                 i += 1;
             }
         }
@@ -1013,7 +1044,8 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                 emulator.ip += 1;
             }
             IrInstructionKind::Envp => {
-                todo!();
+                emulator.stack.push(envp);
+                emulator.ip += 1;
             }
         }
     }
