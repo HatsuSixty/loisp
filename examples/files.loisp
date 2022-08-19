@@ -21,7 +21,9 @@
   )
 
   (if (< (getvar fd) 0)
-    (call fputs 2 "ERROR: Could not open file for whatever reason\n")
+    (block
+      (call eputs "ERROR: Could not open file for whatever reason\n")
+      (call exit 1))
     (block)
   )
 
@@ -41,6 +43,13 @@
       (expand O_RDONLY)
       420
     )
+  )
+
+  (if (< (getvar fd) 0)
+    (block
+      (call eputs "ERROR: Could not open file for whatever reason\n")
+      (call exit 1))
+    (block)
   )
 
   (syscall
