@@ -11,7 +11,10 @@ pub fn evaluate_line(
     context: &mut LoispContext,
     emulator: &mut Emulator,
 ) -> Result<(), LoispError> {
-    if line == "" || line == "\n" {
+    if line == "" {
+        println!();
+        exit(0);
+    } else if line == "\n" {
         return Ok(());
     }
 
