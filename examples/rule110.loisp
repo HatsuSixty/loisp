@@ -1,7 +1,19 @@
 (include "std.loisp")
 
 (macro BOARD_CAP 30)
-(alloc board (expand BOARD_CAP))
+(macro DISPLAY_CAP 1024)
+(alloc board   (expand BOARD_CAP))
+(alloc display (expand DISPLAY_CAP))
+(setvar dis_cnt 0)
+
+(defun display_add
+  (setvar char 0)
+  (pop char)
+  (store8
+    (castptr(+(castint(getmem display))(getvar dis_cnt)))
+    (getvar char))
+  (chvar dis_cnt (+(getvar dis_cnt)1))
+)
 
 (store8(castptr
   (+(castint (getmem board))(-(expand BOARD_CAP)2)))1)
@@ -14,12 +26,12 @@
   (while (<(getvar j)(expand BOARD_CAP))
     (if (load8
           (castptr(+(castint(getmem board))(getvar j))))
-      (call putc 42)
-      (call putc 32)
+      (call display_add 42)
+      (call display_add 32)
     )
     (chvar j (+(getvar j)1))
   )
-  (call putc 10)
+  (call display_add 10)
 
   (chvar pattern
     (|(<<(load8(castptr(+(castint(getmem board))0)))1)
@@ -42,3 +54,5 @@
 
   (chvar i (+(getvar i)1))
 )
+
+(call puts (getmem display))
