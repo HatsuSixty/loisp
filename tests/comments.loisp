@@ -4,6 +4,7 @@
 (while (<(getvar x)10)# condition
   (print (getvar x)) # print
   (chvar x (+(getvar x)1)) # increment
+  (block) { This should also work }
   # long
   # and
   # boring

@@ -89,6 +89,13 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
                         break;
                     }
                 }
+            } else if *x == '{' {
+                while let Some(it) = self.chars.next() {
+                    self.advance_location(it);
+                    if it == '}' {
+                        break;
+                    }
+                }
             } else {
                 return;
             }
