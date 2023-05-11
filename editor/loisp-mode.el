@@ -1,9 +1,9 @@
 ;;; loisp-mode.el --- Major Mode for editing Loisp source code -*- lexical-binding: t -*-
 
-;; Copyright (c) 2022 Roberto Hermenegildo Dias
+;; Copyright (c) 2022-2023 Roberto Hermenegildo Dias
 
 ;; Author: Roberto Hermenegildo Dias
-;; URL: https://github.com/robertosixty1/loisp
+;; URL: https://github.com/HatsuSixty/loisp
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
 ;; of this software and associated documentation files (the "Software"), to deal
