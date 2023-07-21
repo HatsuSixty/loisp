@@ -558,11 +558,11 @@ pub fn emulate_program(ir: IrProgram, emulator: &mut Emulator) {
                         static O_TRUNC: u64 = 512;
                         static O_RDWR: u64 = 2;
 
-                        #[rustfmt::skip] let istrunc =     if (flags & O_TRUNC) == O_TRUNC { true } else { false };
-                        #[rustfmt::skip] let iswriteonly = if (flags & O_WRONLY) == O_WRONLY { true } else { false };
-                        #[rustfmt::skip] let iscreate =    if (flags & O_CREAT) == O_CREAT { true } else { false };
-                        #[rustfmt::skip] let isreadonly =  if (flags & O_RDONLY) == O_RDONLY { true } else { false };
-                        #[rustfmt::skip] let isrdwr =      if (flags & O_RDWR) == O_RDWR { true } else { false };
+                        let istrunc = (flags & O_TRUNC) == O_TRUNC;
+                        let iswriteonly = (flags & O_WRONLY) == O_WRONLY;
+                        let iscreate = (flags & O_CREAT) == O_CREAT;
+                        let isreadonly = (flags & O_RDONLY) == O_RDONLY;
+                        let isrdwr = (flags & O_RDWR) == O_RDWR;
 
                         if !istrunc && !iswriteonly && !iscreate && !isreadonly && isrdwr {
                             emulator.stack.push(-1);
