@@ -28,20 +28,14 @@ impl Stream {
 
     pub fn write(&self, s: String) -> Result<()> {
         if !self.stdout.is_none() {
-            //////////
             write!(self.stdout.as_ref().unwrap(), "{}", s)?;
             self.stdout.as_ref().unwrap().flush()?;
-            //////////
         } else if !self.stderr.is_none() {
-            //////////
             write!(self.stderr.as_ref().unwrap(), "{}", s)?;
             self.stderr.as_ref().unwrap().flush()?;
-            //////////
         } else if !self.file.is_none() {
-            //////////
             write!(self.file.as_ref().unwrap(), "{}", s)?;
             self.file.as_ref().unwrap().flush()?;
-            //////////
         } else if !self.stdin.is_none() {
             return Err(Error::new(ErrorKind::Other, "EBADFD"));
         }
